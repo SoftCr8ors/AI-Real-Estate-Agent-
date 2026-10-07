@@ -10,7 +10,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
 lib64/
 parts/
 sdist/
@@ -23,6 +22,9 @@ wheels/
 venv/
 ENV/
 env/
+
+# Python lib directories (but not frontend/lib)
+backend/lib/
 
 # Node
 node_modules/
