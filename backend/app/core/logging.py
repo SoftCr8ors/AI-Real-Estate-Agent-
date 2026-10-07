@@ -1,6 +1,7 @@
 import logging
 import uuid
 from contextvars import ContextVar
+
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -24,8 +25,8 @@ def get_request_id() -> str:
 def setup_logging():
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - [%(request_id)s] - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
+        format="%(asctime)s - %(name)s - %(levelname)s - [%(request_id)s] - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
 
 

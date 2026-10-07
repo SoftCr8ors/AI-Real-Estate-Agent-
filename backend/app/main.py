@@ -1,8 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from app.core.config import settings
-from app.core.logging import setup_logging, RequestIDMiddleware
-from app.core.errors import app_exception_handler, general_exception_handler, AppException
+from app.core.errors import AppException, app_exception_handler, general_exception_handler
+from app.core.logging import RequestIDMiddleware, setup_logging
 from app.routers import health
 
 # Setup logging

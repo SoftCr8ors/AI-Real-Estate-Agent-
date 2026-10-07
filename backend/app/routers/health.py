@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy import text
 from sqlalchemy.orm import Session
+
 from app.core.config import settings
 
 router = APIRouter(tags=["health"])
@@ -17,7 +18,7 @@ async def health_check(db: Session = Depends(get_db)):
     health_status = {
         "status": "healthy",
         "app_name": settings.APP_NAME,
-        "database": "not_configured"
+        "database": "not_configured",
     }
 
     if db is not None:
