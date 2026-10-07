@@ -11,7 +11,7 @@ export default function Home() {
   useEffect(() => {
     checkHealth()
       .then(setHealth)
-      .catch((err) => setError(err.message))
+      .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
 
