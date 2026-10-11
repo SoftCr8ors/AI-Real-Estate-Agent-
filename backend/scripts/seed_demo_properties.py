@@ -4,12 +4,14 @@ from pathlib import Path
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from sqlalchemy.orm import Session
-from app.core.database import SessionLocal
-from app.models.property import Property
-from app.models.image import PropertyImage
-from app.models.amenity import Amenity
 from decimal import Decimal
+
+from sqlalchemy.orm import Session
+
+from app.core.database import SessionLocal
+from app.models.amenity import Amenity
+from app.models.image import PropertyImage
+from app.models.property import Property
 
 # Demo properties data - 25 realistic Dubai properties
 properties_data = [
@@ -468,7 +470,7 @@ def seed_demo_properties():
 
         db.commit()
         print(f"✅ Successfully seeded {len(properties_data)} demo properties!")
-        
+
         # Count Marina 2BR under 1.5M
         marina_2br_count = db.query(Property).filter(
             Property.location == "Dubai Marina",

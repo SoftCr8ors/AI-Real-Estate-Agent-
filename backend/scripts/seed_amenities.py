@@ -5,7 +5,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sqlalchemy.orm import Session
-from app.core.database import SessionLocal, engine, Base
+
+from app.core.database import SessionLocal
 from app.models.amenity import Amenity
 
 amenities_data = [

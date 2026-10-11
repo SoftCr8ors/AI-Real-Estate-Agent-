@@ -1,11 +1,12 @@
 import sys
-from pathlib import Path
 from datetime import time
+from pathlib import Path
 
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sqlalchemy.orm import Session
+
 from app.core.database import SessionLocal
 from app.models.schedule import WorkingHours
 
@@ -33,7 +34,7 @@ def seed_working_hours():
             db.add(working_hour)
 
         db.commit()
-        print(f"✅ Successfully seeded working hours for 5 days!")
+        print("✅ Successfully seeded working hours for 5 days!")
 
     except Exception as e:
         print(f"❌ Error seeding working hours: {e}")

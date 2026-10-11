@@ -1,7 +1,10 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Enum as SQLEnum, CheckConstraint
-from sqlalchemy.sql import func
-from app.core.database import Base
 import enum
+
+from sqlalchemy import CheckConstraint, Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.sql import func
+
+from app.core.database import Base
 
 
 class AppointmentStatus(str, enum.Enum):
@@ -25,7 +28,7 @@ class Appointment(Base):
     notes = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
+
     __table_args__ = (
         CheckConstraint("duration_minutes > 0", name="positive_duration"),
     )

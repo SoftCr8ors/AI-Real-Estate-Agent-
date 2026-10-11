@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Time, Date, CheckConstraint
+from sqlalchemy import CheckConstraint, Column, Date, Integer, String, Time
+
 from app.core.database import Base
 
 
