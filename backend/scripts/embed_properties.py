@@ -33,45 +33,45 @@ from app.models.property import Property
 def generate_placeholder_embedding(text: str, dimension: int = 768) -> list[float]:
     """
     Generate a placeholder embedding for text.
-    
+
     In production, this will be replaced with actual embedding generation
     using an AI model (e.g., sentence-transformers, OpenAI, etc.).
-    
+
     For now, this generates a deterministic embedding based on text hash
     for testing purposes.
-    
+
     Args:
         text: Text to embed
         dimension: Embedding dimension (default: 768)
-    
+
     Returns:
         List of floats representing the embedding
     """
     # Use text hash as seed for reproducibility
     seed = hash(text) % (2**32)
     np.random.seed(seed)
-    
+
     # Generate random unit vector
     embedding = np.random.randn(dimension)
-    
+
     # Normalize to unit length (common for embeddings)
     norm = np.linalg.norm(embedding)
     if norm > 0:
         embedding = embedding / norm
-    
+
     return embedding.tolist()
 
 
 def create_property_text(property_obj: Property) -> str:
     """
     Create searchable text from property attributes.
-    
+
     This combines key property information into a single text that
     can be embedded for semantic search.
-    
+
     Args:
         property_obj: Property object
-    
+
     Returns:
         Combined text representation
     """
@@ -86,65 +86,65 @@ def create_property_text(property_obj: Property) -> str:
         property_obj.community,
         "furnished" if property_obj.furnished else "unfurnished",
     ]
-    
+
     # Add amenities
     if property_obj.amenities:
         amenity_names = [amenity.name for amenity in property_obj.amenities]
         parts.append("amenities: " + ", ".join(amenity_names))
-    
+
     return " | ".join(parts)
 
 
 def embed_properties(db: Session, force: bool = False) -> tuple[int, int]:
     """
     Generate embeddings for properties in the database.
-    
+
     Args:
         db: Database session
         force: If True, regenerate embeddings even if they exist
-    
+
     Returns:
         Tuple of (total_properties, embedded_properties)
     """
     print("=" * 60)
     print("Property Embedding Generation")
     print("=" * 60)
-    
+
     # Get properties
     if force:
         properties = db.query(Property).all()
         print(f"\n🔄 Force mode: Processing all {len(properties)} properties")
     else:
-        properties = db.query(Property).filter(Property.embedding == None).all()
+        properties = db.query(Property).filter(Property.embedding.is_(None)).all()
         print(f"\n📊 Found {len(properties)} properties without embeddings")
-    
+
     if not properties:
         print("\n✅ No properties to process")
         return (0, 0)
-    
+
     # Generate embeddings
     embedded_count = 0
-    
+
     for i, property_obj in enumerate(properties, 1):
         try:
             # Create text representation
             text = create_property_text(property_obj)
-            
+
             # Generate embedding
             embedding = generate_placeholder_embedding(text)
-            
+
             # Update property
             property_obj.embedding = embedding
-            
+
             embedded_count += 1
-            
+
             if i % 10 == 0 or i == len(properties):
                 print(f"  Progress: {i}/{len(properties)} properties processed")
-        
+
         except Exception as e:
             print(f"  ⚠️  Error processing property {property_obj.reference}: {e}")
             continue
-    
+
     # Commit changes
     try:
         db.commit()
@@ -155,9 +155,9 @@ def embed_properties(db: Session, force: bool = False) -> tuple[int, int]:
         import traceback
         traceback.print_exc()
         return (len(properties), 0)
-    
+
     print("=" * 60)
-    
+
     return (len(properties), embedded_count)
 
 
@@ -171,25 +171,25 @@ def main():
         action="store_true",
         help="Regenerate embeddings even if they already exist"
     )
-    
+
     args = parser.parse_args()
-    
+
     db = SessionLocal()
-    
+
     try:
         total, embedded = embed_properties(db, force=args.force)
-        
+
         if embedded == total or (not args.force and embedded > 0):
             sys.exit(0)
         else:
             sys.exit(1)
-    
+
     except Exception as e:
         print(f"\n❌ Error: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)
-    
+
     finally:
         db.close()
 

@@ -42,18 +42,18 @@ def create_admin_user(
 ) -> bool:
     """
     Create an admin user in the database.
-    
+
     Args:
         email: Email address
         password: Plain text password (will be hashed)
         full_name: Full name
         role: Role (admin or agent)
-    
+
     Returns:
         True if user was created, False otherwise
     """
     db = SessionLocal()
-    
+
     try:
         # Validate role
         try:
@@ -61,10 +61,10 @@ def create_admin_user(
         except ValueError:
             print(f"❌ Invalid role: {role}. Must be 'admin' or 'agent'.")
             return False
-        
+
         # Check if user already exists
         existing_user = db.query(AdminUser).filter(AdminUser.email == email).first()
-        
+
         if existing_user:
             print(f"⚠️  User with email {email} already exists.")
             print(f"   ID: {existing_user.id}")
@@ -72,10 +72,10 @@ def create_admin_user(
             print(f"   Role: {existing_user.role.value}")
             print(f"   Active: {'Yes' if existing_user.is_active else 'No'}")
             return False
-        
+
         # Hash password
         hashed_password = hash_password(password)
-        
+
         # Create admin user
         admin_user = AdminUser(
             email=email,
@@ -84,11 +84,11 @@ def create_admin_user(
             role=user_role,
             is_active=1,
         )
-        
+
         db.add(admin_user)
         db.commit()
         db.refresh(admin_user)
-        
+
         print("=" * 60)
         print("✅ Admin user created successfully!")
         print("=" * 60)
@@ -99,9 +99,9 @@ def create_admin_user(
         print(f"Active:    {'Yes' if admin_user.is_active else 'No'}")
         print(f"Created:   {admin_user.created_at}")
         print("=" * 60)
-        
+
         return True
-        
+
     except IntegrityError as e:
         db.rollback()
         print(f"❌ Database error: {e}")
@@ -121,13 +121,13 @@ def main():
     print("=" * 60)
     print("Admin User Creation Script")
     print("=" * 60)
-    
+
     # Get environment variables
     email = os.getenv("ADMIN_EMAIL")
     password = os.getenv("ADMIN_PASSWORD")
     full_name = os.getenv("ADMIN_FULL_NAME")
     role = os.getenv("ADMIN_ROLE", "admin")
-    
+
     # Validate required variables
     missing = []
     if not email:
@@ -136,7 +136,7 @@ def main():
         missing.append("ADMIN_PASSWORD")
     if not full_name:
         missing.append("ADMIN_FULL_NAME")
-    
+
     if missing:
         print("\n❌ Missing required environment variables:")
         for var in missing:
@@ -153,27 +153,27 @@ def main():
         print("  ADMIN_FULL_NAME=Admin User")
         print("  ADMIN_ROLE=admin")
         sys.exit(1)
-    
+
     # Validate email format (basic check)
     if "@" not in email or "." not in email.split("@")[1]:
         print(f"❌ Invalid email format: {email}")
         sys.exit(1)
-    
+
     # Validate password strength (basic check)
     if len(password) < 8:
         print("❌ Password must be at least 8 characters long")
         sys.exit(1)
-    
-    print(f"\nCreating admin user:")
+
+    print("\nCreating admin user:")
     print(f"  Email:     {email}")
     print(f"  Name:      {full_name}")
     print(f"  Role:      {role}")
     print(f"  Password:  {'*' * len(password)}")
     print()
-    
+
     # Create user
     success = create_admin_user(email, password, full_name, role)
-    
+
     sys.exit(0 if success else 1)
 
 

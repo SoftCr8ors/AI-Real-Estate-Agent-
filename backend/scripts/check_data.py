@@ -32,17 +32,17 @@ from app.models.property import Property
 def check_data(db: Session) -> bool:
     """
     Run sanity checks on the database data.
-    
+
     Returns:
         True if all checks pass, False otherwise.
     """
     errors = []
     warnings = []
-    
+
     print("=" * 60)
     print("Running data sanity checks...")
     print("=" * 60)
-    
+
     # Check 1: Positive prices
     print("\n[1/9] Checking for positive prices...")
     negative_prices = db.query(Property).filter(Property.price <= 0).all()
@@ -53,7 +53,7 @@ def check_data(db: Session) -> bool:
         )
     else:
         print("[OK] All properties have positive prices")
-    
+
     # Check 2: Valid sizes
     print("\n[2/9] Checking for valid sizes...")
     invalid_sizes = db.query(Property).filter(
@@ -66,7 +66,7 @@ def check_data(db: Session) -> bool:
         )
     else:
         print("[OK] All properties have valid sizes (0-50,000 sqft)")
-    
+
     # Check 3: Properties have at least one image
     print("\n[3/9] Checking for property images...")
     properties_without_images = (
@@ -83,11 +83,11 @@ def check_data(db: Session) -> bool:
         )
     else:
         print("[OK] All properties have at least one image")
-    
+
     # Check 4: Properties have descriptions
     print("\n[4/9] Checking for property descriptions...")
     missing_descriptions = db.query(Property).filter(
-        (Property.description == None) | (Property.description == "")
+        (Property.description.is_(None)) | (Property.description == "")
     ).all()
     if missing_descriptions:
         errors.append(
@@ -96,7 +96,7 @@ def check_data(db: Session) -> bool:
         )
     else:
         print("[OK] All properties have descriptions")
-    
+
     # Check 5: Bedrooms and bathrooms are reasonable
     print("\n[5/9] Checking bedroom/bathroom counts...")
     invalid_rooms = db.query(Property).filter(
@@ -110,11 +110,10 @@ def check_data(db: Session) -> bool:
         )
     else:
         print("[OK] All properties have valid bedroom/bathroom counts")
-    
+
     # Check 6: Price consistency (buy vs rent)
     print("\n[6/9] Checking price consistency...")
-    inconsistent_prices = []
-    
+
     # Buy properties should typically be > 500k AED
     buy_properties_cheap = db.query(Property).filter(
         Property.listing_type == "buy",
@@ -125,7 +124,7 @@ def check_data(db: Session) -> bool:
             f"Found {len(buy_properties_cheap)} buy properties under AED 300k (unusually cheap): "
             + ", ".join([f"{p.reference} (AED {p.price})" for p in buy_properties_cheap])
         )
-    
+
     # Rent properties should typically be < 1M AED/year
     rent_properties_expensive = db.query(Property).filter(
         Property.listing_type == "rent",
@@ -136,51 +135,51 @@ def check_data(db: Session) -> bool:
             f"Found {len(rent_properties_expensive)} rent properties over AED 2M/year (unusually expensive): "
             + ", ".join([f"{p.reference} (AED {p.price})" for p in rent_properties_expensive])
         )
-    
+
     if not buy_properties_cheap and not rent_properties_expensive:
         print("[OK] Property prices are within expected ranges")
-    
+
     # Check 7: Demo properties are flagged
     print("\n[7/9] Checking demo property flags...")
     total_properties = db.query(Property).count()
     demo_properties = db.query(Property).filter(Property.is_demo == 1).count()
-    
+
     print(f"  Total properties: {total_properties}")
     print(f"  Demo properties: {demo_properties}")
     print(f"  Real properties: {total_properties - demo_properties}")
-    
+
     if demo_properties == 0 and total_properties > 0:
         warnings.append("No demo properties flagged - are you sure this is correct?")
     else:
         print("[OK] Demo properties are properly tracked")
-    
+
     # Check 8: Amenities exist and are used
     print("\n[8/9] Checking amenities...")
     amenity_count = db.query(Amenity).count()
-    
+
     if amenity_count == 0:
         errors.append("No amenities found in database")
     else:
         print(f"[OK] Found {amenity_count} amenities")
-        
+
         # Check for unused amenities
         # Note: This requires checking the association table
         used_amenities = db.query(func.count(func.distinct(Property.id))).join(
             Property.amenities
         ).scalar()
-        
+
         if used_amenities == 0:
             warnings.append("No properties are associated with amenities")
         else:
-            print(f"[OK] Amenities are used in property associations")
-    
+            print("[OK] Amenities are used in property associations")
+
     # Check 9: Location data consistency
     print("\n[9/9] Checking location data...")
     missing_location = db.query(Property).filter(
-        (Property.location == None) | (Property.location == "") |
-        (Property.community == None) | (Property.community == "")
+        (Property.location.is_(None)) | (Property.location == "") |
+        (Property.community.is_(None)) | (Property.community == "")
     ).all()
-    
+
     if missing_location:
         errors.append(
             f"Found {len(missing_location)} properties with missing location data: "
@@ -188,38 +187,38 @@ def check_data(db: Session) -> bool:
         )
     else:
         print("[OK] All properties have location and community data")
-    
+
     # Summary
     print("\n" + "=" * 60)
     print("SANITY CHECK RESULTS")
     print("=" * 60)
-    
+
     if errors:
         print(f"\n[ERROR] Found {len(errors)} error(s):")
         for i, error in enumerate(errors, 1):
             print(f"  {i}. {error}")
-    
+
     if warnings:
         print(f"\n[WARNING] Found {len(warnings)} warning(s):")
         for i, warning in enumerate(warnings, 1):
             print(f"  {i}. {warning}")
-    
+
     if not errors and not warnings:
         print("\n[SUCCESS] All checks passed! Data is clean.")
     elif not errors:
         print("\n[SUCCESS] All critical checks passed (warnings can be reviewed)")
     else:
         print(f"\n[FAILED] Failed with {len(errors)} error(s)")
-    
+
     print("=" * 60)
-    
+
     return len(errors) == 0
 
 
 def main():
     """Main entry point."""
     db = SessionLocal()
-    
+
     try:
         success = check_data(db)
         sys.exit(0 if success else 1)

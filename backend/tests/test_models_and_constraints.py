@@ -29,11 +29,11 @@ def db_session():
     """Create a fresh database session for each test."""
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(engine)
-    SessionLocal = sessionmaker(bind=engine)
-    session = SessionLocal()
-    
+    session_local = sessionmaker(bind=engine)
+    session = session_local()
+
     yield session
-    
+
     session.close()
     Base.metadata.drop_all(engine)
 
@@ -57,7 +57,7 @@ class TestPropertyConstraints:
             description="First property",
             availability="available",
         )
-        
+
         property2 = Property(
             reference="UNIQUE-001",  # Same reference
             title="Property 2",
@@ -72,12 +72,12 @@ class TestPropertyConstraints:
             description="Second property",
             availability="available",
         )
-        
+
         db_session.add(property1)
         db_session.commit()
-        
+
         db_session.add(property2)
-        
+
         with pytest.raises(IntegrityError):
             db_session.commit()
 
@@ -90,10 +90,10 @@ class TestAmenities:
         amenity1 = Amenity(name="Swimming Pool")
         db_session.add(amenity1)
         db_session.commit()
-        
+
         amenity2 = Amenity(name="Swimming Pool")
         db_session.add(amenity2)
-        
+
         with pytest.raises(IntegrityError):
             db_session.commit()
 
@@ -109,19 +109,19 @@ class TestAdminUser:
             full_name="Admin One",
             role=UserRole.ADMIN,
         )
-        
+
         admin2 = AdminUser(
             email="admin@test.com",  # Same email
             hashed_password="hashed2",
             full_name="Admin Two",
             role=UserRole.ADMIN,
         )
-        
+
         db_session.add(admin1)
         db_session.commit()
-        
+
         db_session.add(admin2)
-        
+
         with pytest.raises(IntegrityError):
             db_session.commit()
 
@@ -133,10 +133,10 @@ class TestAdminUser:
             full_name="Test Admin",
             role=UserRole.ADMIN,
         )
-        
+
         db_session.add(admin)
         db_session.commit()
-        
+
         assert admin.id is not None
         assert admin.email == "test@test.com"
         assert admin.is_active == 1
@@ -152,16 +152,16 @@ class TestCustomer:
             name="Customer One",
             phone="+971501234567",
         )
-        
+
         customer2 = Customer(
             email="customer@test.com",  # Same email
             name="Customer Two",
             phone="+971507654321",
         )
-        
+
         db_session.add_all([customer1, customer2])
         db_session.commit()
-        
+
         # Both should exist
         count = db_session.query(Customer).filter_by(email="customer@test.com").count()
         assert count == 2
@@ -173,9 +173,9 @@ class TestCustomer:
             name="Test Customer",
             phone="+971501234567",
         )
-        
+
         db_session.add(customer)
         db_session.commit()
-        
+
         assert customer.id is not None
         assert customer.email == "test@customer.com"
