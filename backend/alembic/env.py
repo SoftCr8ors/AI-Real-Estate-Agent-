@@ -10,6 +10,7 @@ from alembic import context
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from app.core.config import settings
+from app.models import *  # Import all models
 
 config = context.config
 
