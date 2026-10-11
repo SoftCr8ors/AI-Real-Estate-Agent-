@@ -17,5 +17,20 @@ services:
       timeout: 5s
       retries: 5
 
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://realestate:realestate@postgres:5432/realestate
+      CORS_ORIGINS: https://ai-real-estate-agent-seven.vercel.app
+      DEBUG: false
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   postgres_data:

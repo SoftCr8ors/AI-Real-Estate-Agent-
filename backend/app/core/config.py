@@ -2,7 +2,13 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=True,
+        # This makes environment variables take priority over .env file
+        env_prefix="",
+    )
 
     # Application
     APP_NAME: str = "AI Real Estate Agent"

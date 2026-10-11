@@ -45,6 +45,22 @@ jobs:
         run: |
           python -m alembic upgrade head
 
+      - name: Seed test data
+        working-directory: ./backend
+        env:
+          DATABASE_URL: postgresql://realestate:realestate@localhost:5432/realestate_test
+        run: |
+          python scripts/seed_amenities.py
+          python scripts/seed_demo_properties.py
+          python scripts/seed_working_hours.py
+
+      - name: Validate seeded data
+        working-directory: ./backend
+        env:
+          DATABASE_URL: postgresql://realestate:realestate@localhost:5432/realestate_test
+        run: |
+          python scripts/check_data.py
+
       - name: Lint with ruff
         working-directory: ./backend
         run: |
