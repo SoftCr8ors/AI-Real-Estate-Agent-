@@ -6,8 +6,6 @@ import sys
 from decimal import Decimal
 from pathlib import Path
 
-import pytest
-
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -146,7 +144,7 @@ class TestRentPeriodNormalization:
         """Test auto-detection."""
         # Small amount (< 500k) assumed monthly
         assert normalize.normalize_rent_period(Decimal("10000"), None) == Decimal("120000")
-        
+
         # Large amount (>= 500k) assumed yearly
         assert normalize.normalize_rent_period(Decimal("600000"), None) == Decimal("600000")
 

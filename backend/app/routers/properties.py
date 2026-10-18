@@ -3,14 +3,12 @@ Property API endpoints.
 Public endpoints for property search and details.
 """
 
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.schemas.properties import (
-    NoMatchSuggestionsResponse,
     PropertyCardResponse,
     PropertyDetailResponse,
     PropertyImageResponse,
@@ -28,29 +26,29 @@ router = APIRouter(prefix="/properties", tags=["properties"])
 @router.get("/search", response_model=SearchResultsResponse)
 def search_properties_endpoint(
     # Search parameters
-    listing_type: Optional[str] = Query(None, description="buy or rent"),
-    location: Optional[str] = Query(None, description="Location or community"),
-    property_type: Optional[str] = Query(None, description="apartment, villa, etc."),
-    bedrooms: Optional[int] = Query(None, ge=0, description="Number of bedrooms"),
-    bathrooms: Optional[int] = Query(None, ge=0, description="Number of bathrooms"),
-    min_price: Optional[str] = Query(None, description="Minimum price (e.g., 500000, 1.5M)"),
-    max_price: Optional[str] = Query(None, description="Maximum price (e.g., 1500000, 1.5M)"),
-    min_size: Optional[int] = Query(None, ge=0, description="Minimum size in sqft"),
-    max_size: Optional[int] = Query(None, ge=0, description="Maximum size in sqft"),
-    furnished: Optional[bool] = Query(None, description="Furnished requirement"),
-    amenities: Optional[str] = Query(None, description="Comma-separated amenities"),
+    listing_type: str | None = Query(None, description="buy or rent"),
+    location: str | None = Query(None, description="Location or community"),
+    property_type: str | None = Query(None, description="apartment, villa, etc."),
+    bedrooms: int | None = Query(None, ge=0, description="Number of bedrooms"),
+    bathrooms: int | None = Query(None, ge=0, description="Number of bathrooms"),
+    min_price: str | None = Query(None, description="Minimum price (e.g., 500000, 1.5M)"),
+    max_price: str | None = Query(None, description="Maximum price (e.g., 1500000, 1.5M)"),
+    min_size: int | None = Query(None, ge=0, description="Minimum size in sqft"),
+    max_size: int | None = Query(None, ge=0, description="Maximum size in sqft"),
+    furnished: bool | None = Query(None, description="Furnished requirement"),
+    amenities: str | None = Query(None, description="Comma-separated amenities"),
     db: Session = Depends(get_db),
 ):
     """
     Search properties with filters.
-    
+
     All parameters are optional. System will:
     - Normalize input (1.5M → 1500000, marina → Dubai Marina)
     - Filter available properties only
     - Calculate match scores
     - Order by: within budget first, then score, then price
     - Suggest alternatives if no match
-    
+
     Example:
         /properties/search?listing_type=buy&location=marina&bedrooms=2&max_price=1.5M
     """
@@ -58,30 +56,30 @@ def search_properties_endpoint(
     normalized_listing_type = normalize.normalize_listing_type(listing_type)
     normalized_location = normalize.normalize_location(location)
     normalized_property_type = normalize.normalize_property_type(property_type)
-    
+
     # Normalize budget
     normalized_min_price = None
     normalized_max_price = None
-    
+
     if min_price:
         normalized_min_price = normalize.normalize_budget(min_price)
-    
+
     if max_price:
         normalized_max_price = normalize.normalize_budget(max_price)
-        
+
         # If rent and looks monthly, convert to yearly
         if normalized_listing_type == "rent" and normalized_max_price:
             normalized_max_price = normalize.normalize_rent_period(
                 normalized_max_price, "monthly"
             )
-    
+
     # Normalize amenities
     amenity_list = None
     if amenities:
         amenity_list = normalize.normalize_amenities(
             [a.strip() for a in amenities.split(",")]
         )
-    
+
     # Special case: If budget without buy/rent, suggest to specify
     if normalized_max_price and not normalized_listing_type:
         raise HTTPException(
@@ -89,7 +87,7 @@ def search_properties_endpoint(
             detail="Please specify if you want to buy or rent. "
             "Use listing_type=buy or listing_type=rent",
         )
-    
+
     # Search
     results = search.search_properties(
         db=db,
@@ -105,7 +103,7 @@ def search_properties_endpoint(
         furnished=furnished,
         amenities=amenity_list,
     )
-    
+
     # If no results, return suggestions
     if results["total"] == 0:
         return SearchResultsResponse(
@@ -115,16 +113,16 @@ def search_properties_endpoint(
             properties=[],
             suggestions=results.get("suggestions"),
         )
-    
+
     # Format properties for response
     property_cards = []
-    
+
     for item in results["properties"]:
         prop = item["property"]
-        
+
         # Format amenities (limit to 5 for card display)
         amenity_names = [a.name for a in prop.amenities][:5]
-        
+
         card = PropertyCardResponse(
             id=prop.id,
             reference=prop.reference,
@@ -146,9 +144,9 @@ def search_properties_endpoint(
             primary_image=item["primary_image"],
             amenities=amenity_names,
         )
-        
+
         property_cards.append(card)
-    
+
     return SearchResultsResponse(
         total=results["total"],
         within_budget=results["within_budget"],
@@ -169,7 +167,7 @@ def get_property_details_endpoint(
 ):
     """
     Get full details of a specific property.
-    
+
     Returns all information about the property including:
     - All images
     - All amenities
@@ -177,19 +175,19 @@ def get_property_details_endpoint(
     - Current availability
     """
     property_obj = search.get_property_details(db, property_id)
-    
+
     if not property_obj:
         raise HTTPException(status_code=404, detail="Property not found")
-    
+
     # Format images
     images = [
         PropertyImageResponse(image_url=img.image_url, display_order=img.display_order)
         for img in sorted(property_obj.images, key=lambda x: x.display_order or 999)
     ]
-    
+
     # Format amenities
     amenity_names = [a.name for a in property_obj.amenities]
-    
+
     return PropertyDetailResponse(
         id=property_obj.id,
         reference=property_obj.reference,
@@ -228,15 +226,15 @@ def check_availability_endpoint(
 ):
     """
     Check live availability status of a property.
-    
+
     Returns the current availability status from database.
     Changes made by admin are reflected immediately.
     """
     availability = search.check_property_availability(db, property_id)
-    
+
     if availability is None:
         raise HTTPException(status_code=404, detail="Property not found")
-    
+
     return {
         "property_id": property_id,
         "availability": availability,

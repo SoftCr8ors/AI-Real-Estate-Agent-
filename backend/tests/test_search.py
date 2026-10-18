@@ -28,9 +28,9 @@ def db_session():
     Base.metadata.create_all(engine)
     session_local = sessionmaker(bind=engine)
     session = session_local()
-    
+
     yield session
-    
+
     session.close()
     Base.metadata.drop_all(engine)
 
@@ -43,10 +43,10 @@ def sample_properties(db_session):
     gym = Amenity(name="Gym")
     parking = Amenity(name="Parking")
     balcony = Amenity(name="Balcony")
-    
+
     db_session.add_all([pool, gym, parking, balcony])
     db_session.commit()
-    
+
     # Property 1: Perfect match - Marina 2BR 1.4M with pool and gym
     prop1 = Property(
         reference="TEST-001",
@@ -65,7 +65,7 @@ def sample_properties(db_session):
         is_demo=1,
     )
     prop1.amenities.extend([pool, gym, parking])
-    
+
     # Property 2: Within budget - Marina 2BR 1.48M
     prop2 = Property(
         reference="TEST-002",
@@ -84,7 +84,7 @@ def sample_properties(db_session):
         is_demo=1,
     )
     prop2.amenities.extend([pool, gym])
-    
+
     # Property 3: Over budget by 3% - Marina 2BR 1.545M
     prop3 = Property(
         reference="TEST-003",
@@ -103,7 +103,7 @@ def sample_properties(db_session):
         is_demo=1,
     )
     prop3.amenities.extend([pool, gym, balcony])
-    
+
     # Property 4: Way over budget - Marina 2BR 2M (should not appear)
     prop4 = Property(
         reference="TEST-004",
@@ -121,7 +121,7 @@ def sample_properties(db_session):
         availability="available",
         is_demo=1,
     )
-    
+
     # Property 5: Sold (should not appear)
     prop5 = Property(
         reference="TEST-005",
@@ -139,7 +139,7 @@ def sample_properties(db_session):
         availability="sold",
         is_demo=1,
     )
-    
+
     # Property 6: JLT 2BR (different location)
     prop6 = Property(
         reference="TEST-006",
@@ -157,14 +157,14 @@ def sample_properties(db_session):
         availability="available",
         is_demo=1,
     )
-    
+
     # Add images to prop1
     img1 = PropertyImage(image_url="http://example.com/img1.jpg", display_order=1)
     img1.property = prop1  # Use relationship instead of property_id
-    
+
     db_session.add_all([prop1, prop2, prop3, prop4, prop5, prop6, img1])
     db_session.commit()
-    
+
     return {
         "prop1": prop1,
         "prop2": prop2,
@@ -184,9 +184,9 @@ class TestBasicSearch:
             db=db_session,
             location="Dubai Marina",
         )
-        
+
         assert results["total"] > 0
-        
+
         # All results should be from Dubai Marina
         for item in results["properties"]:
             prop = item["property"]
@@ -198,7 +198,7 @@ class TestBasicSearch:
             db=db_session,
             max_price=Decimal("1500000"),
         )
-        
+
         # Should include properties up to 1.5M + 5% = 1.575M
         for item in results["properties"]:
             prop = item["property"]
@@ -210,7 +210,7 @@ class TestBasicSearch:
             db=db_session,
             bedrooms=2,
         )
-        
+
         # All results should be 1-3 bedrooms (within one)
         for item in results["properties"]:
             prop = item["property"]
@@ -228,7 +228,7 @@ class TestFiltering:
             location="Dubai Marina",
             bedrooms=2,
         )
-        
+
         # Should not include the sold property (TEST-005)
         references = [item["property"].reference for item in results["properties"]]
         assert "TEST-005" not in references
@@ -241,11 +241,11 @@ class TestFiltering:
             bedrooms=2,
             max_price=Decimal("1500000"),
         )
-        
+
         # Should include TEST-003 (1.545M = 3% over)
         references = [item["property"].reference for item in results["properties"]]
         assert "TEST-003" in references
-        
+
         # Should NOT include TEST-004 (2M = way over)
         assert "TEST-004" not in references
 
@@ -256,7 +256,7 @@ class TestFiltering:
             location="Dubai Marina",
             amenities=["Swimming Pool", "Gym"],
         )
-        
+
         # All results should have both amenities
         for item in results["properties"]:
             prop = item["property"]
@@ -276,17 +276,17 @@ class TestOrdering:
             bedrooms=2,
             max_price=Decimal("1500000"),
         )
-        
+
         properties = results["properties"]
         assert len(properties) > 0
-        
+
         # Find first over-budget property
         first_over_budget_index = None
         for i, item in enumerate(properties):
             if item["over_budget"]:
                 first_over_budget_index = i
                 break
-        
+
         # All properties before first over-budget should be within budget
         if first_over_budget_index is not None:
             for i in range(first_over_budget_index):
@@ -301,12 +301,12 @@ class TestOrdering:
             max_price=Decimal("1500000"),
             amenities=["Swimming Pool", "Gym"],
         )
-        
+
         properties = results["properties"]
-        
+
         # Within budget group should be sorted by score
         within_budget = [p for p in properties if not p["over_budget"]]
-        
+
         if len(within_budget) > 1:
             for i in range(len(within_budget) - 1):
                 assert within_budget[i]["score"] >= within_budget[i + 1]["score"]
@@ -322,7 +322,7 @@ class TestScoring:
             location="Dubai Marina",
             bedrooms=2,
         )
-        
+
         for item in results["properties"]:
             assert "score" in item
             assert 0 <= item["score"] <= 100
@@ -335,7 +335,7 @@ class TestScoring:
             bedrooms=2,
             max_price=Decimal("1500000"),
         )
-        
+
         for item in results["properties"]:
             prop = item["property"]
             if prop.price > Decimal("1500000"):
@@ -355,7 +355,7 @@ class TestSuggestions:
             bedrooms=5,  # No 5BR properties
             max_price=Decimal("500000"),  # Too low budget
         )
-        
+
         assert results["total"] == 0
         assert results["suggestions"] is not None
         assert len(results["suggestions"]) > 0
@@ -368,7 +368,7 @@ class TestSuggestions:
             bedrooms=2,
             max_price=Decimal("1000000"),  # Too low
         )
-        
+
         # Should get suggestion about higher budget
         suggestions = results.get("suggestions", [])
         if suggestions:
@@ -382,9 +382,9 @@ class TestPropertyDetails:
     def test_get_existing_property(self, db_session, sample_properties):
         """Test getting details of existing property."""
         prop = sample_properties["prop1"]
-        
+
         details = search.get_property_details(db_session, prop.id)
-        
+
         assert details is not None
         assert details.id == prop.id
         assert details.reference == prop.reference
@@ -392,7 +392,7 @@ class TestPropertyDetails:
     def test_get_nonexistent_property(self, db_session, sample_properties):
         """Test getting details of non-existent property."""
         details = search.get_property_details(db_session, 99999)
-        
+
         assert details is None
 
 
@@ -402,30 +402,30 @@ class TestAvailabilityCheck:
     def test_check_available_property(self, db_session, sample_properties):
         """Test checking availability of available property."""
         prop = sample_properties["prop1"]
-        
+
         availability = search.check_property_availability(db_session, prop.id)
-        
+
         assert availability == "available"
 
     def test_check_sold_property(self, db_session, sample_properties):
         """Test checking availability of sold property."""
         prop = sample_properties["prop5"]
-        
+
         availability = search.check_property_availability(db_session, prop.id)
-        
+
         assert availability == "sold"
 
     def test_availability_change_reflected(self, db_session, sample_properties):
         """Test that availability changes are reflected immediately."""
         prop = sample_properties["prop1"]
-        
+
         # Initial check
         assert search.check_property_availability(db_session, prop.id) == "available"
-        
+
         # Change availability
         prop.availability = "rented"
         db_session.commit()
-        
+
         # Check again - should reflect change
         assert search.check_property_availability(db_session, prop.id) == "rented"
 
@@ -442,13 +442,13 @@ class TestCompleteScenario:
             bedrooms=2,
             max_price=Decimal("1500000"),
         )
-        
+
         # Should have results
         assert results["total"] > 0
-        
+
         # Should be Marina properties
         assert results["within_budget"] > 0
-        
+
         # First result should be within budget
         first = results["properties"][0]
         assert not first["over_budget"]
@@ -461,7 +461,7 @@ class TestCompleteScenario:
             db=db_session,
             location="Dubai Marina",
         )
-        
+
         # Find the property with image (TEST-001)
         for item in results["properties"]:
             if item["property"].reference == "TEST-001":

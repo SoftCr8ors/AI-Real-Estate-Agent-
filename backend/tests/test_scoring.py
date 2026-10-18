@@ -6,8 +6,6 @@ import sys
 from decimal import Decimal
 from pathlib import Path
 
-import pytest
-
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -103,7 +101,7 @@ class TestBedroomScoring:
         """Test within one bedroom."""
         score = scoring.score_bedrooms(property_bedrooms=3, search_bedrooms=2)
         assert score == 100.0
-        
+
         score = scoring.score_bedrooms(property_bedrooms=1, search_bedrooms=2)
         assert score == 100.0
 
@@ -298,7 +296,7 @@ class TestOverallScoring:
             "furnished": True,
             "amenities": ["Swimming Pool", "Gym", "Parking"],
         }
-        
+
         search_criteria = {
             "location": "Dubai Marina",
             "max_price": Decimal("1500000"),
@@ -308,7 +306,7 @@ class TestOverallScoring:
             "furnished": True,
             "amenities": ["Swimming Pool", "Gym"],
         }
-        
+
         score = scoring.calculate_match_score(property_data, search_criteria)
         assert score == 100.0
 
@@ -322,7 +320,7 @@ class TestOverallScoring:
             "property_type": "apartment",
             "amenities": ["Swimming Pool"],  # Missing Gym
         }
-        
+
         search_criteria = {
             "location": "Dubai Marina",
             "max_price": Decimal("1500000"),
@@ -330,7 +328,7 @@ class TestOverallScoring:
             "property_type": "apartment",
             "amenities": ["Swimming Pool", "Gym"],  # Wants both
         }
-        
+
         score = scoring.calculate_match_score(property_data, search_criteria)
         assert score < 100.0  # Should be lower due to missing amenity
 
@@ -340,9 +338,9 @@ class TestOverallScoring:
             "location": "Dubai Marina",
             "price": Decimal("1400000"),
         }
-        
+
         search_criteria = {}
-        
+
         score = scoring.calculate_match_score(property_data, search_criteria)
         assert score == 50.0  # Default when no criteria
 
@@ -353,12 +351,12 @@ class TestOverallScoring:
             "community": "Marina Diamond",
             "bedrooms": 2,
         }
-        
+
         # Only location and bedrooms criteria (no budget, amenities, etc.)
         search_criteria = {
             "location": "Dubai Marina",
             "bedrooms": 2,
         }
-        
+
         score = scoring.calculate_match_score(property_data, search_criteria)
         assert score == 100.0  # Perfect match on provided criteria
