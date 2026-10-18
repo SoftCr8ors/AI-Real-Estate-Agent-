@@ -4,6 +4,7 @@ from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     Column,
     DateTime,
+    Enum,
     ForeignKey,
     Integer,
     Numeric,
@@ -11,11 +12,11 @@ from sqlalchemy import (
     Table,
     Text,
 )
-from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.core.database import Base
+from app.models._types import enum_values
 
 
 class PropertyType(str, enum.Enum):
@@ -58,13 +59,24 @@ class Property(Base):
     id = Column(Integer, primary_key=True, index=True)
     reference = Column(String, unique=True, nullable=False, index=True)
     title = Column(String, nullable=False)
-    property_type = Column(postgresql.ENUM(name="propertytype", create_type=False), nullable=False, index=True)
-    listing_type = Column(postgresql.ENUM(name="listingtype", create_type=False), nullable=False, index=True)
+    property_type = Column(
+        Enum(PropertyType, name="propertytype", create_constraint=False, values_callable=enum_values),
+        nullable=False,
+        index=True,
+    )
+    listing_type = Column(
+        Enum(ListingType, name="listingtype", create_constraint=False, values_callable=enum_values),
+        nullable=False,
+        index=True,
+    )
 
     # Price
     price = Column(Numeric(12, 2), nullable=False)
     currency = Column(String, default="AED", nullable=False)
-    rent_period = Column(postgresql.ENUM(name="rentperiod", create_type=False), nullable=True)
+    rent_period = Column(
+        Enum(RentPeriod, name="rentperiod", create_constraint=False, values_callable=enum_values),
+        nullable=True,
+    )
 
     # Location
     location = Column(String, nullable=False, index=True)
@@ -84,7 +96,7 @@ class Property(Base):
 
     # Status
     availability = Column(
-        postgresql.ENUM(name="availabilitystatus", create_type=False),
+        Enum(AvailabilityStatus, name="availabilitystatus", create_constraint=False, values_callable=enum_values),
         default=AvailabilityStatus.AVAILABLE,
         nullable=False,
         index=True,

@@ -5,6 +5,7 @@ from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.sql import func
 
 from app.core.database import Base
+from app.models._types import enum_values
 
 
 class AppointmentStatus(str, enum.Enum):
@@ -24,7 +25,12 @@ class Appointment(Base):
     agent_id = Column(Integer, ForeignKey("admin_users.id", ondelete="SET NULL"), nullable=True, index=True)
     scheduled_at = Column(DateTime(timezone=True), nullable=False, index=True)
     duration_minutes = Column(Integer, default=45, nullable=False)
-    status = Column(SQLEnum(AppointmentStatus), default=AppointmentStatus.SCHEDULED, nullable=False, index=True)
+    status = Column(
+        SQLEnum(AppointmentStatus, name="appointmentstatus", create_constraint=False, values_callable=enum_values),
+        default=AppointmentStatus.SCHEDULED,
+        nullable=False,
+        index=True,
+    )
     notes = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

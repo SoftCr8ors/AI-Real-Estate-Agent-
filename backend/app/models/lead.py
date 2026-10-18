@@ -5,6 +5,7 @@ from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.sql import func
 
 from app.core.database import Base
+from app.models._types import enum_values
 
 
 class LeadStatus(str, enum.Enum):
@@ -23,7 +24,12 @@ class Lead(Base):
     id = Column(Integer, primary_key=True, index=True)
     customer_id = Column(Integer, ForeignKey("customers.id", ondelete="CASCADE"), nullable=False, index=True)
     conversation_id = Column(Integer, ForeignKey("conversations.id", ondelete="SET NULL"), nullable=True, index=True)
-    status = Column(SQLEnum(LeadStatus), default=LeadStatus.NEW, nullable=False, index=True)
+    status = Column(
+        SQLEnum(LeadStatus, name="leadstatus", create_constraint=False, values_callable=enum_values),
+        default=LeadStatus.NEW,
+        nullable=False,
+        index=True,
+    )
     requirements = Column(Text, nullable=True)  # Summary of what customer wants
     notes = Column(Text, nullable=True)
     assigned_to = Column(Integer, ForeignKey("admin_users.id", ondelete="SET NULL"), nullable=True, index=True)
@@ -46,8 +52,14 @@ class LeadStatusHistory(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     lead_id = Column(Integer, ForeignKey("leads.id", ondelete="CASCADE"), nullable=False, index=True)
-    old_status = Column(SQLEnum(LeadStatus), nullable=True)
-    new_status = Column(SQLEnum(LeadStatus), nullable=False)
+    old_status = Column(
+        SQLEnum(LeadStatus, name="leadstatus", create_constraint=False, values_callable=enum_values),
+        nullable=True,
+    )
+    new_status = Column(
+        SQLEnum(LeadStatus, name="leadstatus", create_constraint=False, values_callable=enum_values),
+        nullable=False,
+    )
     changed_by = Column(Integer, ForeignKey("admin_users.id", ondelete="SET NULL"), nullable=True)
     notes = Column(Text, nullable=True)
     changed_at = Column(DateTime(timezone=True), server_default=func.now())
