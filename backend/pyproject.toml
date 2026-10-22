@@ -17,6 +17,11 @@ dependencies = [
     "pydantic-settings==2.5.2",
     "python-dotenv==1.0.1",
     "pgvector==0.3.4",
+    # Phase 4: AI Agent dependencies
+    "google-generativeai==0.8.3",
+    "groq==0.11.0",
+    "openai==1.51.2",
+    "cryptography==43.0.1",
 ]
 
 [project.optional-dependencies]

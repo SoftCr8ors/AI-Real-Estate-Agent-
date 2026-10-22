@@ -28,13 +28,14 @@ def setup_logging():
         format="%(asctime)s - %(name)s - %(levelname)s - [%(request_id)s] - %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
+    # Attach filter to handlers, not the root logger.
+    # Logger filters only apply to records logged directly to that logger;
+    # propagated records (e.g. from httpx) would miss request_id and crash the formatter.
+    for handler in logging.getLogger().handlers:
+        handler.addFilter(RequestIDFilter())
 
 
 class RequestIDFilter(logging.Filter):
     def filter(self, record):
         record.request_id = get_request_id()
         return True
-
-
-# Add filter to root logger
-logging.getLogger().addFilter(RequestIDFilter())
