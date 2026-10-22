@@ -94,7 +94,7 @@ class TestSendMessage:
         assert response.status_code == 401
 
     def test_ended_conversation_rejected(self, client, db_factory):
-        token = client.post("/chat/start", json={}).json()["session_token"]
+        client.post("/chat/start", json={}).json()["session_token"]
 
         # End the conversation directly in DB
         session = db_factory()

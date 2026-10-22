@@ -5,10 +5,8 @@ These define the strict input/output contracts for all 9 tools.
 
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
 
 from pydantic import BaseModel, Field
-
 
 # ============================================================================
 # SEARCH TOOLS
@@ -16,12 +14,12 @@ from pydantic import BaseModel, Field
 
 class SearchPropertiesInput(BaseModel):
     """Input for search_properties tool"""
-    listing_type: Optional[str] = Field(None, description="'buy' or 'rent'")
-    location: Optional[str] = Field(None, description="City, area, or neighborhood name")
-    min_price: Optional[float] = Field(None, description="Minimum price in AED")
-    max_price: Optional[float] = Field(None, description="Maximum price in AED")
-    bedrooms: Optional[int] = Field(None, description="Number of bedrooms")
-    property_type: Optional[str] = Field(None, description="'apartment', 'villa', 'townhouse', 'penthouse'")
+    listing_type: str | None = Field(None, description="'buy' or 'rent'")
+    location: str | None = Field(None, description="City, area, or neighborhood name")
+    min_price: float | None = Field(None, description="Minimum price in AED")
+    max_price: float | None = Field(None, description="Maximum price in AED")
+    bedrooms: int | None = Field(None, description="Number of bedrooms")
+    property_type: str | None = Field(None, description="'apartment', 'villa', 'townhouse', 'penthouse'")
     limit: int = Field(10, description="Max results to return", ge=1, le=50)
 
 
@@ -41,7 +39,7 @@ class PropertySummary(BaseModel):
 
 class SearchPropertiesOutput(BaseModel):
     """Output from search_properties tool"""
-    properties: List[PropertySummary]
+    properties: list[PropertySummary]
     total_found: int
     query_understood: str  # Natural language summary of what was searched
 
@@ -68,10 +66,10 @@ class PropertyDetails(BaseModel):
     listing_type: str
     property_type: str
     availability: str
-    amenities: List[str]
-    images: List[str]  # URLs
-    agent_name: Optional[str]
-    agent_phone: Optional[str]
+    amenities: list[str]
+    images: list[str]  # URLs
+    agent_name: str | None
+    agent_phone: str | None
 
 
 class GetPropertyDetailsOutput(BaseModel):
@@ -112,9 +110,9 @@ class LeadStatusEnum(str, Enum):
 class CreateLeadInput(BaseModel):
     """Input for create_lead tool"""
     conversation_id: int
-    customer_id: Optional[int] = None
-    requirements: Optional[str] = Field(None, description="JSON string of customer requirements")
-    notes: Optional[str] = None
+    customer_id: int | None = None
+    requirements: str | None = Field(None, description="JSON string of customer requirements")
+    notes: str | None = None
 
 
 class CreateLeadOutput(BaseModel):
@@ -127,10 +125,10 @@ class CreateLeadOutput(BaseModel):
 class UpdateLeadInput(BaseModel):
     """Input for update_lead tool"""
     lead_id: int
-    status: Optional[LeadStatusEnum] = None
-    requirements: Optional[str] = None
-    notes: Optional[str] = None
-    expected_timeline: Optional[str] = None
+    status: LeadStatusEnum | None = None
+    requirements: str | None = None
+    notes: str | None = None
+    expected_timeline: str | None = None
 
 
 class UpdateLeadOutput(BaseModel):
@@ -162,7 +160,7 @@ class TimeSlot(BaseModel):
 class GetAvailableSlotsOutput(BaseModel):
     """Output from get_available_slots tool"""
     property_id: int
-    slots: List[TimeSlot]
+    slots: list[TimeSlot]
 
 
 # ============================================================================
@@ -176,7 +174,7 @@ class BookViewingInput(BaseModel):
     slot_id: str
     customer_name: str
     customer_phone: str
-    customer_email: Optional[str] = None
+    customer_email: str | None = None
 
 
 class BookViewingOutput(BaseModel):
@@ -193,26 +191,26 @@ class BookViewingOutput(BaseModel):
 
 class GetCustomerHistoryInput(BaseModel):
     """Input for get_customer_history tool"""
-    customer_id: Optional[int] = None
-    conversation_id: Optional[int] = None
+    customer_id: int | None = None
+    conversation_id: int | None = None
 
 
 class CustomerInteraction(BaseModel):
     """Single customer interaction record"""
     date: datetime
     type: str  # "viewed", "interested", "contacted"
-    property_id: Optional[int]
-    property_title: Optional[str]
-    notes: Optional[str]
+    property_id: int | None
+    property_title: str | None
+    notes: str | None
 
 
 class GetCustomerHistoryOutput(BaseModel):
     """Output from get_customer_history tool"""
-    customer_id: Optional[int]
+    customer_id: int | None
     total_conversations: int
     total_properties_viewed: int
-    interactions: List[CustomerInteraction]
-    current_lead_status: Optional[str]
+    interactions: list[CustomerInteraction]
+    current_lead_status: str | None
 
 
 # ============================================================================
@@ -223,11 +221,11 @@ class NotifySalesTeamInput(BaseModel):
     """Input for notify_sales_team tool"""
     lead_id: int
     urgency: str = Field("normal", description="'low', 'normal', 'high', 'urgent'")
-    message: Optional[str] = None
+    message: str | None = None
 
 
 class NotifySalesTeamOutput(BaseModel):
     """Output from notify_sales_team tool"""
     notification_sent: bool
-    notified_agents: List[str]
+    notified_agents: list[str]
     notification_id: str

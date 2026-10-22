@@ -3,17 +3,16 @@ Get customer history tool.
 AI agent uses this to retrieve customer's past interactions and interests.
 """
 
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy.orm import Session
 
 from app.schemas.tools import (
+    CustomerInteraction,
     GetCustomerHistoryInput,
     GetCustomerHistoryOutput,
-    CustomerInteraction,
 )
 from app.services.leads import get_lead_by_conversation, get_lead_viewed_properties
-
 
 # ============================================================================
 # TOOL DEFINITION
@@ -56,40 +55,40 @@ def get_customer_history_tool(
 ) -> GetCustomerHistoryOutput:
     """
     Execute customer history retrieval.
-    
+
     Args:
         db: Database session
         params: Parameters from AI (customer_id or conversation_id)
-        
+
     Returns:
         GetCustomerHistoryOutput with interaction history
     """
     # Validate input
     input_data = GetCustomerHistoryInput(**params)
-    
+
     customer_id = input_data.customer_id
     conversation_id = input_data.conversation_id
-    
+
     # Get lead if conversation_id provided
     lead = None
     if conversation_id:
         lead = get_lead_by_conversation(db, conversation_id)
         if lead and not customer_id:
             customer_id = lead.customer_id
-    
+
     # Build interactions list
     interactions = []
     total_conversations = 0
     total_properties_viewed = 0
     current_lead_status = None
-    
+
     if lead:
         current_lead_status = lead.status.value
-        
+
         # Get viewed properties
         viewed_property_ids = get_lead_viewed_properties(db, lead.id)
         total_properties_viewed = len(viewed_property_ids)
-        
+
         # Create interaction records for viewed properties
         from app.services.search import get_property_details
         for prop_id in viewed_property_ids[:10]:  # Limit to last 10
@@ -102,7 +101,7 @@ def get_customer_history_tool(
                     property_title=prop.title,
                     notes=None,
                 ))
-    
+
     # Get customer's other conversations if customer_id available
     if customer_id:
         from app.models.conversation import Conversation
@@ -110,11 +109,11 @@ def get_customer_history_tool(
             Conversation.customer_id == customer_id
         ).all()
         total_conversations = len(conversations)
-        
+
         # Get all leads for customer
         from app.services.leads import get_leads_by_customer
         customer_leads = get_leads_by_customer(db, customer_id, limit=10)
-        
+
         for customer_lead in customer_leads:
             if customer_lead.id != (lead.id if lead else None):
                 interactions.append(CustomerInteraction(
@@ -124,10 +123,10 @@ def get_customer_history_tool(
                     property_title=None,
                     notes=f"Previous lead: {customer_lead.status.value}",
                 ))
-    
+
     # Sort interactions by date (most recent first)
     interactions.sort(key=lambda x: x.date, reverse=True)
-    
+
     return GetCustomerHistoryOutput(
         customer_id=customer_id,
         total_conversations=total_conversations,

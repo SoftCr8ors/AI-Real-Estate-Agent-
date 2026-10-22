@@ -10,7 +10,6 @@ from sqlalchemy.orm import Session
 
 from app.schemas.tools import GetAvailableSlotsInput, GetAvailableSlotsOutput, TimeSlot
 
-
 # ============================================================================
 # TOOL DEFINITION
 # ============================================================================
@@ -55,24 +54,24 @@ def get_available_slots_tool(
 ) -> GetAvailableSlotsOutput:
     """
     Execute viewing slots retrieval (STUB - returns mock data).
-    
+
     Args:
         db: Database session
         params: Parameters from AI (property_id, date_from, date_to)
-        
+
     Returns:
         GetAvailableSlotsOutput with available time slots
     """
     # Validate input
     input_data = GetAvailableSlotsInput(**params)
-    
+
     # STUB: Generate mock available slots
     # In production, this would query a calendar/booking system
-    
+
     slots = []
     current_date = datetime.strptime(input_data.date_from, "%Y-%m-%d")
     end_date = datetime.strptime(input_data.date_to, "%Y-%m-%d")
-    
+
     # Generate morning (10 AM) and afternoon (2 PM) slots for next 7 days
     while current_date <= end_date and len(slots) < 14:
         # Skip weekends for this stub
@@ -84,7 +83,7 @@ def get_available_slots_tool(
                 datetime=morning,
                 available=True,
             ))
-            
+
             # Afternoon slot
             afternoon = current_date.replace(hour=14, minute=0, second=0)
             slots.append(TimeSlot(
@@ -92,9 +91,9 @@ def get_available_slots_tool(
                 datetime=afternoon,
                 available=True,
             ))
-        
+
         current_date += timedelta(days=1)
-    
+
     return GetAvailableSlotsOutput(
         property_id=input_data.property_id,
         slots=slots[:10],  # Return max 10 slots

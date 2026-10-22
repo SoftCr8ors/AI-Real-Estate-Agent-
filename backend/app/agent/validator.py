@@ -4,12 +4,10 @@ Validates AI responses for accuracy before sending to customer.
 """
 
 import re
-from typing import Optional
 
 from sqlalchemy.orm import Session
 
 from app.services.search import get_property_details
-
 
 # ============================================================================
 # VALIDATION RULES
@@ -37,15 +35,15 @@ def validate_response(
     db: Session,
     response_text: str,
     conversation_id: int,
-) -> tuple[bool, Optional[str]]:
+) -> tuple[bool, str | None]:
     """
     Validate AI response before sending to customer.
-    
+
     Args:
         db: Database session
         response_text: AI-generated response text
         conversation_id: Current conversation ID
-        
+
     Returns:
         Tuple of (is_valid: bool, error_message: Optional[str])
     """
@@ -53,96 +51,96 @@ def validate_response(
     is_valid, error = check_prohibited_phrases(response_text)
     if not is_valid:
         return False, error
-    
+
     # 2. Validate property references
     is_valid, error = validate_property_references(db, response_text)
     if not is_valid:
         return False, error
-    
+
     # 3. Validate price mentions
     is_valid, error = validate_price_mentions(db, response_text)
     if not is_valid:
         return False, error
-    
+
     return True, None
 
 
-def check_prohibited_phrases(response_text: str) -> tuple[bool, Optional[str]]:
+def check_prohibited_phrases(response_text: str) -> tuple[bool, str | None]:
     """
     Check for prohibited marketing phrases.
-    
+
     Args:
         response_text: Response text to check
-        
+
     Returns:
         Tuple of (is_valid, error_message)
     """
     text_lower = response_text.lower()
-    
+
     for phrase in PROHIBITED_PHRASES:
         if phrase in text_lower:
             return False, f"Response contains prohibited phrase: '{phrase}'"
-    
+
     return True, None
 
 
-def validate_property_references(db: Session, response_text: str) -> tuple[bool, Optional[str]]:
+def validate_property_references(db: Session, response_text: str) -> tuple[bool, str | None]:
     """
     Validate that property IDs mentioned exist in database.
-    
+
     Args:
         db: Database session
         response_text: Response text
-        
+
     Returns:
         Tuple of (is_valid, error_message)
     """
     # Extract property IDs from text (e.g., "Property #123" or "ID: 123")
     property_id_pattern = r'(?:property\s*#?|id:?\s*)(\d+)'
     matches = re.findall(property_id_pattern, response_text, re.IGNORECASE)
-    
+
     for match in matches:
         property_id = int(match)
-        
+
         # Check if property exists
         prop = get_property_details(db, property_id)
         if not prop:
             return False, f"Response references non-existent property ID: {property_id}"
-    
+
     return True, None
 
 
-def validate_price_mentions(db: Session, response_text: str) -> tuple[bool, Optional[str]]:
+def validate_price_mentions(db: Session, response_text: str) -> tuple[bool, str | None]:
     """
     Validate price mentions against database.
-    
+
     Args:
         db: Database session
         response_text: Response text
-        
+
     Returns:
         Tuple of (is_valid, error_message)
     """
     # Extract price mentions (e.g., "AED 1,500,000" or "1.5M AED")
     # This is a simplified check - in production, would be more sophisticated
-    
+
     # Pattern: AED followed by number
     price_pattern = r'AED\s*([\d,\.]+[KMk]?)'
     price_matches = re.findall(price_pattern, response_text, re.IGNORECASE)
-    
+
     # If prices are mentioned without property context, let it pass
     # (General budget discussions are okay)
     if not price_matches:
         return True, None
-    
+
     # Check if property IDs are also mentioned
     property_id_pattern = r'(?:property\s*#?|id:?\s*)(\d+)'
     property_matches = re.findall(property_id_pattern, response_text, re.IGNORECASE)
-    
+
     if not property_matches:
         # Prices mentioned but no specific properties - probably budget discussion
         return True, None
-    
+
     # If both property and price mentioned, could validate they match
     # For now, we'll trust the tool outputs were correct
     return True, None
@@ -155,10 +153,10 @@ def validate_price_mentions(db: Session, response_text: str) -> tuple[bool, Opti
 def get_safe_fallback_response(error_type: str) -> str:
     """
     Get a safe fallback response when validation fails.
-    
+
     Args:
         error_type: Type of validation error
-        
+
     Returns:
         Safe fallback response text
     """
@@ -181,7 +179,7 @@ def get_safe_fallback_response(error_type: str) -> str:
             "Let me help you find what you're looking for. What are you most interested in?"
         ),
     }
-    
+
     return fallbacks.get(error_type, fallbacks["general"])
 
 
@@ -192,10 +190,10 @@ def get_safe_fallback_response(error_type: str) -> str:
 def should_regenerate(attempt_count: int) -> bool:
     """
     Determine if response should be regenerated.
-    
+
     Args:
         attempt_count: Number of generation attempts so far
-        
+
     Returns:
         True if should regenerate, False if should use fallback
     """
@@ -206,10 +204,10 @@ def should_regenerate(attempt_count: int) -> bool:
 def build_correction_prompt(error_message: str) -> str:
     """
     Build a prompt to correct the previous response.
-    
+
     Args:
         error_message: Validation error message
-        
+
     Returns:
         Correction prompt
     """

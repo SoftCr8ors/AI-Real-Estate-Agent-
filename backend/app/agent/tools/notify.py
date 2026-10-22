@@ -9,7 +9,6 @@ from sqlalchemy.orm import Session
 
 from app.schemas.tools import NotifySalesTeamInput, NotifySalesTeamOutput
 
-
 # ============================================================================
 # TOOL DEFINITION
 # ============================================================================
@@ -57,17 +56,17 @@ def notify_sales_team_tool(
 ) -> NotifySalesTeamOutput:
     """
     Execute sales team notification (STUB - simulates notification).
-    
+
     Args:
         db: Database session
         params: Parameters from AI
-        
+
     Returns:
         NotifySalesTeamOutput with notification confirmation
     """
     # Validate input
     input_data = NotifySalesTeamInput(**params)
-    
+
     # STUB: Simulate notification
     # In production, this would:
     # 1. Get lead details
@@ -78,17 +77,17 @@ def notify_sales_team_tool(
     #    - Internal dashboard alert
     #    - Slack/Teams webhook
     # 4. Log notification in database
-    
+
     # Get lead to check assigned agent
     from app.services.leads import get_lead_by_id
     lead = get_lead_by_id(db, input_data.lead_id)
-    
+
     if not lead:
         raise ValueError(f"Lead ID {input_data.lead_id} not found")
-    
+
     # Mock: Determine who to notify
     notified_agents = []
-    
+
     if lead.assigned_to:
         # Notify assigned agent
         notified_agents.append(f"Agent_{lead.assigned_to}")
@@ -98,13 +97,13 @@ def notify_sales_team_tool(
             notified_agents.append("TeamLead_Sales")
         else:
             notified_agents.append("Sales_Queue")
-    
+
     # Generate mock notification ID
     import hashlib
     notification_id = hashlib.md5(
         f"{input_data.lead_id}_{input_data.urgency}".encode()
     ).hexdigest()[:12]
-    
+
     return NotifySalesTeamOutput(
         notification_sent=True,
         notified_agents=notified_agents,

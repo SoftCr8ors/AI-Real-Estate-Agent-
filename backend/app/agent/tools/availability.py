@@ -11,7 +11,6 @@ from sqlalchemy.orm import Session
 from app.schemas.tools import CheckAvailabilityInput, CheckAvailabilityOutput
 from app.services.search import check_property_availability
 
-
 # ============================================================================
 # TOOL DEFINITION
 # ============================================================================
@@ -49,29 +48,29 @@ def check_property_availability_tool(
 ) -> CheckAvailabilityOutput:
     """
     Execute property availability check.
-    
+
     Args:
         db: Database session
         params: Parameters from AI (property_id)
-        
+
     Returns:
         CheckAvailabilityOutput with availability status
-        
+
     Raises:
         ValueError: If property not found
     """
     # Validate input
     input_data = CheckAvailabilityInput(**params)
-    
+
     # Check availability from service
     availability_status = check_property_availability(db, input_data.property_id)
-    
+
     if availability_status is None:
         raise ValueError(f"Property ID {input_data.property_id} not found")
-    
+
     # Determine if available
     available = availability_status == "available"
-    
+
     return CheckAvailabilityOutput(
         property_id=input_data.property_id,
         available=available,

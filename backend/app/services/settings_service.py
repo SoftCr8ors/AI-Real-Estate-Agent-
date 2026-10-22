@@ -3,13 +3,11 @@ Settings service - manage encrypted admin settings (AI provider keys).
 Handles encryption/decryption of sensitive values like API keys.
 """
 
-from typing import Optional
 
 from sqlalchemy.orm import Session
 
 from app.core.crypto import crypto_service
 from app.models.settings import AppSettings
-
 
 # ============================================================================
 # SETTINGS CRUD
@@ -19,7 +17,7 @@ def get_setting(
     db: Session,
     key: str,
     decrypt: bool = True
-) -> Optional[str]:
+) -> str | None:
     """
     Get a setting value by key.
 
@@ -56,8 +54,8 @@ def set_setting(
     value: str,
     encrypt: bool = False,
     category: str = "general",
-    description: Optional[str] = None,
-    updated_by: Optional[int] = None
+    description: str | None = None,
+    updated_by: int | None = None
 ) -> AppSettings:
     """
     Set or update a setting value.
@@ -139,13 +137,13 @@ def get_ai_provider(db: Session) -> str:
     provider = get_setting(db, "ai_provider", decrypt=False)
     if provider:
         return provider
-    
+
     # Fall back to environment/config
     from app.core.config import settings
     return settings.AI_PROVIDER
 
 
-def get_ai_api_key(db: Session, provider: Optional[str] = None) -> Optional[str]:
+def get_ai_api_key(db: Session, provider: str | None = None) -> str | None:
     """
     Get API key for specified provider (or current provider).
     Priority: database (encrypted) > environment variable
@@ -169,7 +167,7 @@ def get_ai_api_key(db: Session, provider: Optional[str] = None) -> Optional[str]
 
     # Fall back to config/environment
     from app.core.config import settings
-    
+
     if provider == "gemini":
         return settings.GEMINI_API_KEY
     elif provider == "groq":
@@ -183,8 +181,8 @@ def get_ai_api_key(db: Session, provider: Optional[str] = None) -> Optional[str]
 def set_ai_provider(
     db: Session,
     provider: str,
-    api_key: Optional[str] = None,
-    updated_by: Optional[int] = None
+    api_key: str | None = None,
+    updated_by: int | None = None
 ) -> None:
     """
     Set AI provider and optionally its API key.

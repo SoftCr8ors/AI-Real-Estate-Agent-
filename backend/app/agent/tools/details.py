@@ -10,7 +10,6 @@ from sqlalchemy.orm import Session
 from app.schemas.tools import GetPropertyDetailsInput, GetPropertyDetailsOutput, PropertyDetails
 from app.services.search import get_property_details
 
-
 # ============================================================================
 # TOOL DEFINITION
 # ============================================================================
@@ -48,42 +47,42 @@ def get_property_details_tool(
 ) -> GetPropertyDetailsOutput:
     """
     Execute property details retrieval.
-    
+
     Args:
         db: Database session
         params: Parameters from AI (property_id)
-        
+
     Returns:
         GetPropertyDetailsOutput with full property info
-        
+
     Raises:
         ValueError: If property not found
     """
     # Validate input
     input_data = GetPropertyDetailsInput(**params)
-    
+
     # Get property from service
     property_obj = get_property_details(db, input_data.property_id)
-    
+
     if not property_obj:
         raise ValueError(f"Property ID {input_data.property_id} not found")
-    
+
     # Extract amenities
     amenities = [amenity.name for amenity in property_obj.amenities]
-    
+
     # Extract images
     images = []
     if property_obj.images:
         sorted_images = sorted(property_obj.images, key=lambda x: x.display_order or 999)
         images = [img.image_url for img in sorted_images]
-    
+
     # Get agent info (if available)
     agent_name = None
     agent_phone = None
     if hasattr(property_obj, 'agent') and property_obj.agent:
         agent_name = property_obj.agent.name
         agent_phone = property_obj.agent.phone
-    
+
     # Build property details
     details = PropertyDetails(
         property_id=property_obj.id,
@@ -102,7 +101,7 @@ def get_property_details_tool(
         agent_name=agent_name,
         agent_phone=agent_phone,
     )
-    
+
     return GetPropertyDetailsOutput(
         property=details,
         availability_status=property_obj.availability,

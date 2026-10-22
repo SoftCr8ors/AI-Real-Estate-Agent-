@@ -140,65 +140,65 @@ STATE_SUMMARY_TEMPLATE = """## What We Know
 def build_state_summary(customer_state: dict) -> str:
     """
     Build a concise state summary for AI context.
-    
+
     Args:
         customer_state: Current customer state dict
-        
+
     Returns:
         Formatted state summary string
     """
     known = []
     unknown = []
-    
+
     # Check what we know
     if customer_state.get("listing_type"):
         known.append(f"Looking to {customer_state['listing_type']}")
     else:
         unknown.append("Buy or rent?")
-    
+
     if customer_state.get("location"):
         known.append(f"Location: {customer_state['location']}")
     else:
         unknown.append("Preferred location?")
-    
+
     if customer_state.get("budget"):
         known.append(f"Budget: AED {customer_state['budget']:,.0f}")
     else:
         unknown.append("Budget range?")
-    
+
     if customer_state.get("bedrooms") is not None:
         br = "Studio" if customer_state["bedrooms"] == 0 else f"{customer_state['bedrooms']} BR"
         known.append(f"Size: {br}")
     else:
         unknown.append("Number of bedrooms?")
-    
+
     if customer_state.get("property_type"):
         known.append(f"Type: {customer_state['property_type']}")
-    
+
     if customer_state.get("name"):
         known.append(f"Name: {customer_state['name']}")
-    
+
     if customer_state.get("phone"):
         known.append(f"Phone: {customer_state['phone']}")
-    
+
     if customer_state.get("email"):
         known.append(f"Email: {customer_state['email']}")
-    
+
     # Recent activity
     activity = []
     properties_viewed = customer_state.get("properties_viewed", 0)
     if properties_viewed > 0:
         activity.append(f"Viewed {properties_viewed} properties")
-    
+
     last_search = customer_state.get("last_search_query")
     if last_search:
         activity.append(f"Last search: {last_search}")
-    
+
     # Build summary
     known_info = "\n".join(f"- {k}" for k in known) if known else "None yet"
     unknown_info = "\n".join(f"- {u}" for u in unknown) if unknown else "All key info collected"
     recent_activity = "\n".join(f"- {a}" for a in activity) if activity else "Just started conversation"
-    
+
     return STATE_SUMMARY_TEMPLATE.format(
         known_info=known_info,
         unknown_info=unknown_info,

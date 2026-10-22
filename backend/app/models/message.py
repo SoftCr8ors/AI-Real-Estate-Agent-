@@ -13,12 +13,12 @@ class Message(Base):
     role = Column(String, nullable=False)  # user, assistant, system
     content = Column(Text, nullable=False)
     metadata_json = Column(Text, nullable=True)  # JSON string for tool calls, etc.
-    
+
     # Phase 4: Additional fields
     token_count = Column(Integer, nullable=True)
     status = Column(String, nullable=False, default="completed")  # completed, streaming, error
-    
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    
+
     # Relationships
     conversation = relationship("Conversation", back_populates="messages")

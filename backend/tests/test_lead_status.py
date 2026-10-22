@@ -14,9 +14,8 @@ from sqlalchemy.orm import Session, sessionmaker
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from app.core.database import Base
-from app.models.lead import Lead, LeadStatus, LeadStatusHistory
+from app.models.lead import Lead, LeadStatus
 from app.services.lead_status import (
-    VALID_TRANSITIONS,
     auto_progress_lead,
     can_transition,
     evaluate_lead_progression,

@@ -38,11 +38,11 @@ def start_conversation(
 ):
     """
     Start a new conversation and get a session token.
-    
+
     Args:
         request: Start conversation request
         db: Database session
-        
+
     Returns:
         StartConversationResponse with conversation_id and session_token
     """
@@ -52,7 +52,7 @@ def start_conversation(
         customer_id=None,  # Anonymous by default
         channel="web",
     )
-    
+
     return StartConversationResponse(
         conversation_id=conversation.id,
         session_token=session_token,
@@ -71,11 +71,11 @@ async def send_message(
 ):
     """
     Send a message and stream AI response via SSE.
-    
+
     Args:
         request: Chat message request with session_token
         db: Database session
-        
+
     Returns:
         StreamingResponse with SSE events
     """
@@ -85,23 +85,23 @@ async def send_message(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Session token required",
         )
-    
+
     # Get conversation by token
     conversation = get_conversation_by_token(db, request.session_token)
-    
+
     if not conversation:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid session token",
         )
-    
+
     # Check conversation status
     if conversation.status != "active":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Conversation is {conversation.status}",
         )
-    
+
     # Stream agent response
     return StreamingResponse(
         stream_agent_response(
@@ -129,26 +129,26 @@ def get_conversation_history(
 ):
     """
     Get full conversation history (admin/debug endpoint).
-    
+
     Args:
         conversation_id: Conversation ID
         db: Database session
-        
+
     Returns:
         ConversationHistoryResponse with messages
     """
     # Get conversation
     conversation = get_conversation_by_id(db, conversation_id)
-    
+
     if not conversation:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Conversation not found",
         )
-    
+
     # Get messages
     messages = get_conversation_messages(db, conversation_id)
-    
+
     # Build response
     conversation_response = ConversationResponse(
         conversation_id=conversation.id,
@@ -160,7 +160,7 @@ def get_conversation_history(
         updated_at=conversation.updated_at,
         message_count=len(messages),
     )
-    
+
     message_responses = [
         MessageResponse(
             message_id=msg.id,
@@ -172,7 +172,7 @@ def get_conversation_history(
         )
         for msg in messages
     ]
-    
+
     return ConversationHistoryResponse(
         conversation=conversation_response,
         messages=message_responses,
@@ -187,7 +187,7 @@ def get_conversation_history(
 def chat_health_check():
     """
     Health check endpoint for chat API.
-    
+
     Returns:
         Status dict
     """

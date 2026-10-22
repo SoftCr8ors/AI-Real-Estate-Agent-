@@ -4,13 +4,11 @@ Handles lead creation, updates, and property interest tracking.
 """
 
 import json
-from typing import Optional
 
 from sqlalchemy.orm import Session
 
 from app.models.lead import Lead, LeadProperty, LeadSource, LeadStatus
 from app.services.lead_status import auto_progress_lead, update_lead_status
-
 
 # ============================================================================
 # LEAD CREATION
@@ -19,9 +17,9 @@ from app.services.lead_status import auto_progress_lead, update_lead_status
 def create_lead(
     db: Session,
     conversation_id: int,
-    customer_id: Optional[int] = None,
-    requirements: Optional[str] = None,
-    notes: Optional[str] = None,
+    customer_id: int | None = None,
+    requirements: str | None = None,
+    notes: str | None = None,
     source: LeadSource = LeadSource.CHAT,
 ) -> Lead:
     """
@@ -66,7 +64,7 @@ def create_lead(
 def get_or_create_lead(
     db: Session,
     conversation_id: int,
-    customer_id: Optional[int] = None,
+    customer_id: int | None = None,
 ) -> tuple[Lead, bool]:
     """
     Get existing lead or create new one.
@@ -104,11 +102,11 @@ def get_or_create_lead(
 def update_lead(
     db: Session,
     lead_id: int,
-    requirements: Optional[str] = None,
-    notes: Optional[str] = None,
-    expected_timeline: Optional[str] = None,
-    assigned_to: Optional[int] = None,
-) -> Optional[Lead]:
+    requirements: str | None = None,
+    notes: str | None = None,
+    expected_timeline: str | None = None,
+    assigned_to: int | None = None,
+) -> Lead | None:
     """
     Update lead information.
 
@@ -151,7 +149,7 @@ def update_lead_requirements(
     db: Session,
     lead_id: int,
     customer_state: dict,
-) -> Optional[Lead]:
+) -> Lead | None:
     """
     Update lead requirements from customer state.
 
@@ -245,7 +243,7 @@ def mark_property_interest(
     lead_id: int,
     property_id: int,
     interested: bool = True,
-) -> Optional[LeadProperty]:
+) -> LeadProperty | None:
     """
     Mark customer interest in a property.
 
@@ -323,7 +321,7 @@ def get_lead_viewed_properties(
 # LEAD RETRIEVAL
 # ============================================================================
 
-def get_lead_by_id(db: Session, lead_id: int) -> Optional[Lead]:
+def get_lead_by_id(db: Session, lead_id: int) -> Lead | None:
     """
     Get lead by ID.
 
@@ -340,7 +338,7 @@ def get_lead_by_id(db: Session, lead_id: int) -> Optional[Lead]:
 def get_lead_by_conversation(
     db: Session,
     conversation_id: int,
-) -> Optional[Lead]:
+) -> Lead | None:
     """
     Get lead by conversation ID.
 
@@ -385,7 +383,7 @@ def mark_lead_lost(
     db: Session,
     lead_id: int,
     reason: str,
-    changed_by: Optional[int] = None,
+    changed_by: int | None = None,
 ) -> bool:
     """
     Mark lead as lost.
@@ -413,7 +411,7 @@ def mark_lead_converted(
     db: Session,
     lead_id: int,
     reason: str,
-    changed_by: Optional[int] = None,
+    changed_by: int | None = None,
 ) -> bool:
     """
     Mark lead as converted (deal closed).

@@ -5,12 +5,11 @@ Handles Server-Sent Events streaming from agent to frontend.
 
 import asyncio
 import json
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 from sqlalchemy.orm import Session
 
 from app.agent.loop import run_agent_loop
-
 
 # ============================================================================
 # SSE STREAMING
@@ -23,12 +22,12 @@ async def stream_agent_response(
 ) -> AsyncGenerator[str, None]:
     """
     Stream agent response as Server-Sent Events.
-    
+
     Args:
         db: Database session
         conversation_id: Conversation ID
         user_message: User's message
-        
+
     Yields:
         SSE formatted strings (event: type\ndata: json\n\n)
     """
@@ -48,7 +47,7 @@ async def stream_agent_response(
             # Small delay to prevent overwhelming client
             await asyncio.sleep(0.01)
 
-    except Exception as e:
+    except Exception:
         # Send error event
         error_event = {
             "event": "error",
@@ -69,21 +68,21 @@ async def stream_agent_response(
 def format_sse_event(event_type: str, data: dict) -> str:
     """
     Format event as SSE string.
-    
+
     Args:
         event_type: Event type (text, property_cards, error, etc.)
         data: Event data dict
-        
+
     Returns:
         SSE formatted string
     """
     # Convert data to JSON
     data_json = json.dumps(data, default=str)
-    
+
     # Format as SSE
     # Format: event: <type>\ndata: <json>\n\n
     sse = f"event: {event_type}\ndata: {data_json}\n\n"
-    
+
     return sse
 
 
@@ -98,21 +97,21 @@ async def stream_text_chunks(
 ) -> AsyncGenerator[dict, None]:
     """
     Stream text in chunks for typing effect (future enhancement).
-    
+
     Args:
         text: Full text to stream
         chunk_size: Characters per chunk
         delay: Delay between chunks in seconds
-        
+
     Yields:
         Text chunk events
     """
     words = text.split()
     current_chunk = []
-    
+
     for word in words:
         current_chunk.append(word)
-        
+
         # Send chunk when size reached
         if len(" ".join(current_chunk)) >= chunk_size:
             yield {
@@ -124,7 +123,7 @@ async def stream_text_chunks(
             }
             current_chunk = []
             await asyncio.sleep(delay)
-    
+
     # Send remaining chunk
     if current_chunk:
         yield {
@@ -144,23 +143,23 @@ class ConnectionManager:
     """
     Manage active SSE connections (future enhancement for multi-user support).
     """
-    
+
     def __init__(self):
         self.active_connections: dict[int, list] = {}
-    
+
     def connect(self, conversation_id: int, connection):
         """Add a connection."""
         if conversation_id not in self.active_connections:
             self.active_connections[conversation_id] = []
         self.active_connections[conversation_id].append(connection)
-    
+
     def disconnect(self, conversation_id: int, connection):
         """Remove a connection."""
         if conversation_id in self.active_connections:
             self.active_connections[conversation_id].remove(connection)
             if not self.active_connections[conversation_id]:
                 del self.active_connections[conversation_id]
-    
+
     def get_connections(self, conversation_id: int) -> list:
         """Get all connections for a conversation."""
         return self.active_connections.get(conversation_id, [])

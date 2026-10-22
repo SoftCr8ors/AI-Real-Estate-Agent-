@@ -11,7 +11,6 @@ from sqlalchemy.orm import Session
 
 from app.schemas.tools import BookViewingInput, BookViewingOutput
 
-
 # ============================================================================
 # TOOL DEFINITION
 # ============================================================================
@@ -68,17 +67,17 @@ def book_viewing_tool(
 ) -> BookViewingOutput:
     """
     Execute viewing booking (STUB - simulates booking).
-    
+
     Args:
         db: Database session
         params: Parameters from AI
-        
+
     Returns:
         BookViewingOutput with booking confirmation
     """
     # Validate input
     input_data = BookViewingInput(**params)
-    
+
     # STUB: Simulate booking
     # In production, this would:
     # 1. Check slot availability
@@ -86,7 +85,7 @@ def book_viewing_tool(
     # 3. Send confirmation email/SMS
     # 4. Update lead status to VIEWING_SCHEDULED
     # 5. Notify assigned agent
-    
+
     # Extract datetime from slot_id (format: slot_PROPERTYID_YYYYMMDD_HHMM)
     try:
         parts = input_data.slot_id.split("_")
@@ -96,14 +95,14 @@ def book_viewing_tool(
     except (IndexError, ValueError):
         # Fallback to current time + 1 day
         slot_datetime = datetime.utcnow().replace(hour=10, minute=0, second=0, microsecond=0)
-    
+
     # Generate mock booking ID
     booking_id = abs(hash(input_data.slot_id)) % 100000
-    
+
     # Update lead status to VIEWING_SCHEDULED
     from app.models.lead import LeadStatus
     from app.services.lead_status import update_lead_status
-    
+
     update_lead_status(
         db=db,
         lead_id=input_data.lead_id,
@@ -111,7 +110,7 @@ def book_viewing_tool(
         reason=f"Viewing booked for {slot_datetime.strftime('%Y-%m-%d %H:%M')}",
         automated=True,
     )
-    
+
     return BookViewingOutput(
         booking_id=booking_id,
         confirmed=True,

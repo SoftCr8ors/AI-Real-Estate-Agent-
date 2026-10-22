@@ -43,7 +43,7 @@ async def startup_event():
     # Register all agent tools
     from app.agent.registry import register_all_tools
     register_all_tools()
-    
+
     print("✅ AI Agent tools registered")
     print(f"✅ {settings.APP_NAME} started successfully")
 

@@ -3,13 +3,10 @@ Lead status management service.
 Handles automated lead status progression with business rules.
 """
 
-from datetime import datetime
-from typing import Optional
 
 from sqlalchemy.orm import Session
 
 from app.models.lead import Lead, LeadStatus, LeadStatusHistory
-
 
 # ============================================================================
 # STATUS PROGRESSION RULES
@@ -57,8 +54,8 @@ def update_lead_status(
     db: Session,
     lead_id: int,
     new_status: LeadStatus,
-    reason: Optional[str] = None,
-    changed_by: Optional[int] = None,
+    reason: str | None = None,
+    changed_by: int | None = None,
     automated: bool = True,
 ) -> bool:
     """
@@ -116,7 +113,7 @@ def evaluate_lead_progression(
     db: Session,
     lead: Lead,
     customer_state: dict,
-) -> Optional[LeadStatus]:
+) -> LeadStatus | None:
     """
     Evaluate if lead should progress to next status based on gathered info.
 
@@ -192,7 +189,7 @@ def auto_progress_lead(
     db: Session,
     lead_id: int,
     customer_state: dict,
-) -> Optional[LeadStatus]:
+) -> LeadStatus | None:
     """
     Automatically progress lead status if rules are met.
 
@@ -211,7 +208,7 @@ def auto_progress_lead(
     suggested_status = evaluate_lead_progression(db, lead, customer_state)
 
     if suggested_status and suggested_status != lead.status:
-        reason = f"Automated progression based on customer state"
+        reason = "Automated progression based on customer state"
         success = update_lead_status(
             db=db,
             lead_id=lead_id,

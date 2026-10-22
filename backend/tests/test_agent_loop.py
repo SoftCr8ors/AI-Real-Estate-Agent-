@@ -18,10 +18,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from app.agent.lm_client import RateLimitError
 from app.agent.loop import run_agent_loop
 from app.core.database import Base
-from app.models.amenity import Amenity
 from app.models.property import Property
 from app.services.conversation import create_conversation, get_conversation_messages
-
 
 # ============================================================================
 # FIXTURES & HELPERS
@@ -93,8 +91,8 @@ class TestPlainTextFlow:
 
     async def test_text_and_done_events(self, db_session):
         conv, _ = create_conversation(db_session)
-        with patch("app.agent.loop.LLMClient") as MockClient:
-            MockClient.return_value.generate.return_value = text_response(
+        with patch("app.agent.loop.LLMClient") as mock_client:
+            mock_client.return_value.generate.return_value = text_response(
                 "Hello! I can help you find property in Dubai."
             )
             events = await collect_events(db_session, conv.id, "Hi, I need help")
@@ -105,8 +103,8 @@ class TestPlainTextFlow:
 
     async def test_messages_saved(self, db_session):
         conv, _ = create_conversation(db_session)
-        with patch("app.agent.loop.LLMClient") as MockClient:
-            MockClient.return_value.generate.return_value = text_response(
+        with patch("app.agent.loop.LLMClient") as mock_client:
+            mock_client.return_value.generate.return_value = text_response(
                 "Sure, what is your budget?"
             )
             await collect_events(db_session, conv.id, "Show me apartments")
@@ -119,11 +117,11 @@ class TestPlainTextFlow:
 
     async def test_llm_called_with_user_message(self, db_session):
         conv, _ = create_conversation(db_session)
-        with patch("app.agent.loop.LLMClient") as MockClient:
-            MockClient.return_value.generate.return_value = text_response("ok")
+        with patch("app.agent.loop.LLMClient") as mock_client:
+            mock_client.return_value.generate.return_value = text_response("ok")
             await collect_events(db_session, conv.id, "I want a villa")
 
-        call_kwargs = MockClient.return_value.generate.call_args.kwargs
+        call_kwargs = mock_client.return_value.generate.call_args.kwargs
         message_contents = [m["content"] for m in call_kwargs["messages"]]
         assert "I want a villa" in message_contents
 
@@ -133,8 +131,8 @@ class TestToolCallFlow:
 
     async def test_search_tool_emits_property_cards(self, db_session, sample_property):
         conv, _ = create_conversation(db_session)
-        with patch("app.agent.loop.LLMClient") as MockClient:
-            MockClient.return_value.generate.side_effect = [
+        with patch("app.agent.loop.LLMClient") as mock_client:
+            mock_client.return_value.generate.side_effect = [
                 tool_response(
                     "search_properties",
                     {
@@ -160,8 +158,8 @@ class TestToolCallFlow:
 
     async def test_final_text_still_saved_after_tool(self, db_session, sample_property):
         conv, _ = create_conversation(db_session)
-        with patch("app.agent.loop.LLMClient") as MockClient:
-            MockClient.return_value.generate.side_effect = [
+        with patch("app.agent.loop.LLMClient") as mock_client:
+            mock_client.return_value.generate.side_effect = [
                 tool_response(
                     "search_properties",
                     {"listing_type": "buy", "location": "Dubai Marina", "bedrooms": 2},
@@ -182,8 +180,8 @@ class TestValidationInLoop:
         conv, _ = create_conversation(db_session)
         bad = text_response("This property gives guaranteed returns of 20%!")
         good = text_response("This property has strong rental demand.")
-        with patch("app.agent.loop.LLMClient") as MockClient:
-            MockClient.return_value.generate.side_effect = [bad, good]
+        with patch("app.agent.loop.LLMClient") as mock_client:
+            mock_client.return_value.generate.side_effect = [bad, good]
             events = await collect_events(db_session, conv.id, "Tell me about it")
 
         assert events[0]["data"]["text"] == "This property has strong rental demand."
@@ -193,8 +191,8 @@ class TestValidationInLoop:
     async def test_repeated_bad_response_uses_fallback(self, db_session):
         conv, _ = create_conversation(db_session)
         bad = text_response("Amazing! Guaranteed returns, no risk at all.")
-        with patch("app.agent.loop.LLMClient") as MockClient:
-            MockClient.return_value.generate.side_effect = [bad, bad]
+        with patch("app.agent.loop.LLMClient") as mock_client:
+            mock_client.return_value.generate.side_effect = [bad, bad]
             events = await collect_events(db_session, conv.id, "Sell me this")
 
         final_text = events[0]["data"]["text"]
@@ -223,8 +221,8 @@ class TestErrorPaths:
 
     async def test_rate_limit_error_event(self, db_session):
         conv, _ = create_conversation(db_session)
-        with patch("app.agent.loop.LLMClient") as MockClient:
-            MockClient.return_value.generate.side_effect = RateLimitError("slow down")
+        with patch("app.agent.loop.LLMClient") as mock_client:
+            mock_client.return_value.generate.side_effect = RateLimitError("slow down")
             events = await collect_events(db_session, conv.id, "hello")
 
         assert events[0]["event"] == "error"
@@ -233,8 +231,8 @@ class TestErrorPaths:
 
     async def test_generic_exception_error_event(self, db_session):
         conv, _ = create_conversation(db_session)
-        with patch("app.agent.loop.LLMClient") as MockClient:
-            MockClient.return_value.generate.side_effect = RuntimeError("boom")
+        with patch("app.agent.loop.LLMClient") as mock_client:
+            mock_client.return_value.generate.side_effect = RuntimeError("boom")
             events = await collect_events(db_session, conv.id, "hello")
 
         assert events[0]["event"] == "error"
@@ -247,8 +245,8 @@ class TestErrorPaths:
             "get_available_slots",
             {"property_id": 1, "date_from": "2026-11-02", "date_to": "2026-11-06"},
         )
-        with patch("app.agent.loop.LLMClient") as MockClient:
-            MockClient.return_value.generate.side_effect = [slots_call] * 5
+        with patch("app.agent.loop.LLMClient") as mock_client:
+            mock_client.return_value.generate.side_effect = [slots_call] * 5
             events = await collect_events(db_session, conv.id, "book a viewing")
 
         last = events[-1]

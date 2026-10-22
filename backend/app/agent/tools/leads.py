@@ -14,9 +14,8 @@ from app.schemas.tools import (
     UpdateLeadInput,
     UpdateLeadOutput,
 )
-from app.services.leads import create_lead, get_or_create_lead, update_lead
 from app.services.lead_status import update_lead_status
-
+from app.services.leads import get_or_create_lead, update_lead
 
 # ============================================================================
 # CREATE LEAD TOOL
@@ -63,24 +62,24 @@ def create_lead_tool(
 ) -> CreateLeadOutput:
     """
     Execute lead creation.
-    
+
     Args:
         db: Database session
         params: Parameters from AI
-        
+
     Returns:
         CreateLeadOutput with lead ID and status
     """
     # Validate input
     input_data = CreateLeadInput(**params)
-    
+
     # Get or create lead (idempotent)
     lead, created = get_or_create_lead(
         db=db,
         conversation_id=input_data.conversation_id,
         customer_id=input_data.customer_id,
     )
-    
+
     # Update lead info if provided
     if input_data.requirements or input_data.notes:
         update_lead(
@@ -89,7 +88,7 @@ def create_lead_tool(
             requirements=input_data.requirements,
             notes=input_data.notes,
         )
-    
+
     return CreateLeadOutput(
         lead_id=lead.id,
         status=lead.status.value,
@@ -146,29 +145,29 @@ def update_lead_tool(
 ) -> UpdateLeadOutput:
     """
     Execute lead update.
-    
+
     Args:
         db: Database session
         params: Parameters from AI
-        
+
     Returns:
         UpdateLeadOutput with old and new status
-        
+
     Raises:
         ValueError: If lead not found
     """
     # Validate input
     input_data = UpdateLeadInput(**params)
-    
+
     # Get current lead
     from app.services.leads import get_lead_by_id
     lead = get_lead_by_id(db, input_data.lead_id)
-    
+
     if not lead:
         raise ValueError(f"Lead ID {input_data.lead_id} not found")
-    
+
     old_status = lead.status.value
-    
+
     # Update status if provided
     if input_data.status:
         new_status = LeadStatus(input_data.status)
@@ -179,7 +178,7 @@ def update_lead_tool(
             reason="Updated by AI agent based on conversation",
             automated=True,
         )
-    
+
     # Update other fields
     updated_lead = update_lead(
         db=db,
@@ -188,10 +187,10 @@ def update_lead_tool(
         notes=input_data.notes,
         expected_timeline=input_data.expected_timeline,
     )
-    
+
     if not updated_lead:
         raise ValueError(f"Failed to update lead {input_data.lead_id}")
-    
+
     return UpdateLeadOutput(
         lead_id=updated_lead.id,
         old_status=old_status,

@@ -5,10 +5,9 @@ Defines all event types the frontend can receive.
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
-
 
 # ============================================================================
 # REQUEST SCHEMAS
@@ -17,8 +16,8 @@ from pydantic import BaseModel, Field
 class ChatMessageRequest(BaseModel):
     """Request to send a message in a conversation"""
     message: str = Field(..., min_length=1, max_length=1000, description="User's message")
-    session_token: Optional[str] = Field(None, description="Secret session token (identifies conversation securely)")
-    metadata: Optional[Dict[str, Any]] = Field(None, description="Extra context (referrer, campaign, etc.)")
+    session_token: str | None = Field(None, description="Secret session token (identifies conversation securely)")
+    metadata: dict[str, Any] | None = Field(None, description="Extra context (referrer, campaign, etc.)")
 
 
 class StartConversationRequest(BaseModel):
@@ -26,8 +25,8 @@ class StartConversationRequest(BaseModel):
     Request to start a new conversation.
     Returns a session_token that must be used for all subsequent messages.
     """
-    initial_message: Optional[str] = Field(None, max_length=1000)
-    metadata: Optional[Dict[str, Any]] = None
+    initial_message: str | None = Field(None, max_length=1000)
+    metadata: dict[str, Any] | None = None
 
 
 # ============================================================================
@@ -55,8 +54,8 @@ class SSEEventType(str, Enum):
 class SSEEvent(BaseModel):
     """Base SSE event structure"""
     event: SSEEventType
-    data: Dict[str, Any]
-    message_id: Optional[int] = None
+    data: dict[str, Any]
+    message_id: int | None = None
 
 
 class TextChunk(BaseModel):
@@ -74,13 +73,13 @@ class PropertyCard(BaseModel):
     bedrooms: int
     bathrooms: int
     area_sqft: int
-    image_url: Optional[str]
+    image_url: str | None
     relevance_score: int
 
 
 class PropertyCardsEvent(BaseModel):
     """Property search results event"""
-    properties: List[PropertyCard]
+    properties: list[PropertyCard]
     total_found: int
     query_summary: str
 
@@ -98,23 +97,23 @@ class PropertyDetailsEvent(BaseModel):
     listing_type: str
     property_type: str
     availability: str
-    amenities: List[str]
-    images: List[str]
-    agent_name: Optional[str]
-    agent_phone: Optional[str]
+    amenities: list[str]
+    images: list[str]
+    agent_name: str | None
+    agent_phone: str | None
 
 
 class NoMatchSuggestion(BaseModel):
     """Alternative suggestion"""
     reason: str
     suggestion: str
-    adjusted_criteria: Optional[Dict[str, Any]]
+    adjusted_criteria: dict[str, Any] | None
 
 
 class NoMatchSuggestionsEvent(BaseModel):
     """Suggestions when no properties match"""
     original_query: str
-    suggestions: List[NoMatchSuggestion]
+    suggestions: list[NoMatchSuggestion]
 
 
 class TimeSlotOption(BaseModel):
@@ -129,7 +128,7 @@ class TimeSlotsEvent(BaseModel):
     """Available viewing slots"""
     property_id: int
     property_title: str
-    slots: List[TimeSlotOption]
+    slots: list[TimeSlotOption]
 
 
 class AppointmentEvent(BaseModel):
@@ -147,22 +146,22 @@ class ContactFormField(BaseModel):
     field_name: str  # "name", "email", "phone"
     label: str
     required: bool
-    current_value: Optional[str] = None
+    current_value: str | None = None
 
 
 class ContactFormRequestEvent(BaseModel):
     """Request customer contact information"""
     reason: str  # "To schedule a viewing, we need your contact details"
-    fields: List[ContactFormField]
-    lead_id: Optional[int]
+    fields: list[ContactFormField]
+    lead_id: int | None
 
 
 class HandoffEvent(BaseModel):
     """Transfer to human agent"""
     reason: str
     urgency: str  # "low", "normal", "high"
-    estimated_wait_time: Optional[str]
-    lead_id: Optional[int]
+    estimated_wait_time: str | None
+    lead_id: int | None
 
 
 class ErrorEvent(BaseModel):
@@ -186,9 +185,9 @@ class StartConversationResponse(BaseModel):
 class ConversationResponse(BaseModel):
     """Conversation metadata (for admin panel only - no session_token exposed)"""
     conversation_id: int
-    customer_id: Optional[int]
-    customer_name: Optional[str]
-    customer_email: Optional[str]
+    customer_id: int | None
+    customer_name: str | None
+    customer_email: str | None
     status: str
     created_at: datetime
     updated_at: datetime
@@ -202,18 +201,18 @@ class MessageResponse(BaseModel):
     role: str  # "user" or "assistant"
     content: str
     created_at: datetime
-    metadata: Optional[Dict[str, Any]]
+    metadata: dict[str, Any] | None
 
 
 class ConversationHistoryResponse(BaseModel):
     """Full conversation history (admin only)"""
     conversation: ConversationResponse
-    messages: List[MessageResponse]
+    messages: list[MessageResponse]
 
 
 class ConversationListResponse(BaseModel):
     """List of conversations (admin only)"""
-    conversations: List[ConversationResponse]
+    conversations: list[ConversationResponse]
     total: int
     page: int
     page_size: int

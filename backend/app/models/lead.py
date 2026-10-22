@@ -45,12 +45,12 @@ class Lead(Base):
     __tablename__ = "leads"
 
     id = Column(Integer, primary_key=True, index=True)
-    
+
     # Links
     customer_id = Column(Integer, ForeignKey("customers.id", ondelete="CASCADE"), nullable=True, index=True)
     conversation_id = Column(Integer, ForeignKey("conversations.id", ondelete="SET NULL"), nullable=True,
 index=True)
-    
+
     # Lead information
     source = Column(
         SQLEnum(LeadSource, name="leadsource", create_constraint=False, values_callable=enum_values,
@@ -58,7 +58,7 @@ native_enum=False),
         default=LeadSource.CHAT,
         nullable=False
     )
-    
+
     status = Column(
         SQLEnum(LeadStatus, name="leadstatus", create_constraint=False, values_callable=enum_values,
 native_enum=False),
@@ -66,21 +66,21 @@ native_enum=False),
         nullable=False,
         index=True
     )
-    
+
     # Customer requirements (captured from conversation)
     requirements = Column(Text, nullable=True)  # JSON: {"listing_type": "buy", "location": "...", ...}
     notes = Column(Text, nullable=True)
-    
+
     # Assignment
     assigned_to = Column(Integer, ForeignKey("admin_users.id", ondelete="SET NULL"), nullable=True, index=True)
-    
+
     # Timeline
     expected_timeline = Column(String, nullable=True)  # "within_1_month", "1-3_months", "3-6_months", "6+_months"
-    
+
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
-    
+
     # Relationships
     conversation = relationship("Conversation", back_populates="lead")
     customer = relationship("Customer", backref="leads")
@@ -103,7 +103,7 @@ class LeadStatusHistory(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     lead_id = Column(Integer, ForeignKey("leads.id", ondelete="CASCADE"), nullable=False, index=True)
-    
+
     old_status = Column(
         SQLEnum(LeadStatus, name="leadstatus", create_constraint=False, values_callable=enum_values,
 native_enum=False),
@@ -114,13 +114,13 @@ native_enum=False),
 native_enum=False),
         nullable=False
     )
-    
+
     # Who/what triggered the change
     changed_by = Column(Integer, ForeignKey("admin_users.id", ondelete="SET NULL"), nullable=True)
     automated = Column(Integer, default=1, nullable=False)  # 1=auto by rules, 0=manual by admin
-    
+
     reason = Column(Text, nullable=True)  # Why status changed
     changed_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    
+
     # Relationships
     lead = relationship("Lead", back_populates="status_history")

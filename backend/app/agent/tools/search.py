@@ -8,9 +8,8 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.schemas.tools import SearchPropertiesInput, SearchPropertiesOutput, PropertySummary
+from app.schemas.tools import PropertySummary, SearchPropertiesInput, SearchPropertiesOutput
 from app.services.search import search_properties
-
 
 # ============================================================================
 # TOOL DEFINITION
@@ -76,17 +75,17 @@ def search_properties_tool(
 ) -> SearchPropertiesOutput:
     """
     Execute property search.
-    
+
     Args:
         db: Database session
         params: Search parameters from AI
-        
+
     Returns:
         SearchPropertiesOutput with results
     """
     # Validate input
     input_data = SearchPropertiesInput(**params)
-    
+
     # Convert to service parameters
     search_params = {
         "listing_type": input_data.listing_type,
@@ -96,10 +95,10 @@ def search_properties_tool(
         "bedrooms": input_data.bedrooms,
         "property_type": input_data.property_type,
     }
-    
+
     # Call search service
     results = search_properties(db, **search_params)
-    
+
     # Build query summary
     query_parts = []
     if input_data.listing_type:
@@ -111,9 +110,9 @@ def search_properties_tool(
         query_parts.append(f"in {input_data.location}")
     if input_data.max_price:
         query_parts.append(f"under AED {input_data.max_price:,.0f}")
-    
+
     query_summary = "Properties " + " ".join(query_parts) if query_parts else "All available properties"
-    
+
     # Convert to output format
     property_summaries = []
     for result in results["properties"][:input_data.limit]:
@@ -130,7 +129,7 @@ def search_properties_tool(
             property_type=prop.property_type,
             relevance_score=result["score"],
         ))
-    
+
     return SearchPropertiesOutput(
         properties=property_summaries,
         total_found=results["total"],
