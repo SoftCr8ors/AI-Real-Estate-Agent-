@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.errors import AppException, app_exception_handler, general_exception_handler
 from app.core.logging import RequestIDMiddleware, setup_logging
-from app.routers import chat, health, properties
+from app.routers import appointments, chat, health, properties
 
 # Setup logging
 setup_logging()
@@ -33,7 +33,8 @@ app.add_exception_handler(Exception, general_exception_handler)
 # Routers
 app.include_router(health.router)
 app.include_router(properties.router)
-app.include_router(chat.router)  # NEW: Phase 4 Chat API
+app.include_router(chat.router)  # Phase 4: Chat API
+app.include_router(appointments.router)  # Phase 5: Appointments API
 
 
 # Startup event
@@ -57,5 +58,5 @@ def read_root():
         "version": "1.0.0",
         "status": "running",
         "docs": "/docs",
-        "phase": "4 - AI Agent & Chat API",
+        "phase": "5 - Viewing Booking & Google Calendar",
     }

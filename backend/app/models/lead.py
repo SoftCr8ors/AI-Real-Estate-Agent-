@@ -85,6 +85,7 @@ native_enum=False),
     conversation = relationship("Conversation", back_populates="lead")
     customer = relationship("Customer", backref="leads")
     status_history = relationship("LeadStatusHistory", back_populates="lead", cascade="all, delete-orphan")
+    appointments = relationship("Appointment", back_populates="lead", cascade="all, delete-orphan")
 
 
 class LeadProperty(Base):

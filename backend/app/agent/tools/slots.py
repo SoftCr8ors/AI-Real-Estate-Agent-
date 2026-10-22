@@ -1,14 +1,15 @@
 """
-Get available viewing slots tool (STUB).
+Get available viewing slots tool.
 AI agent uses this to check available appointment times.
 """
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.schemas.tools import GetAvailableSlotsInput, GetAvailableSlotsOutput, TimeSlot
+from app.schemas.tools import GetAvailableSlotsOutput, TimeSlot
+from app.services.slots import MAX_DAYS_AHEAD, generate_time_slots
 
 # ============================================================================
 # TOOL DEFINITION
@@ -45,7 +46,7 @@ TOOL_DEFINITION = {
 
 
 # ============================================================================
-# TOOL EXECUTION (STUB)
+# TOOL EXECUTION
 # ============================================================================
 
 def get_available_slots_tool(
@@ -53,7 +54,7 @@ def get_available_slots_tool(
     params: dict[str, Any],
 ) -> GetAvailableSlotsOutput:
     """
-    Execute viewing slots retrieval (STUB - returns mock data).
+    Execute viewing slots retrieval.
 
     Args:
         db: Database session
@@ -61,42 +62,78 @@ def get_available_slots_tool(
 
     Returns:
         GetAvailableSlotsOutput with available time slots
+
+    Raises:
+        ValueError: If property not found or not available
     """
-    # Validate input
-    input_data = GetAvailableSlotsInput(**params)
+    # Extract and validate parameters
+    property_id = params.get("property_id")
+    date_from_str = params.get("date_from")
+    date_to_str = params.get("date_to")
 
-    # STUB: Generate mock available slots
-    # In production, this would query a calendar/booking system
+    if not property_id:
+        raise ValueError("property_id is required")
+    if not date_from_str:
+        raise ValueError("date_from is required")
+    if not date_to_str:
+        raise ValueError("date_to is required")
 
-    slots = []
-    current_date = datetime.strptime(input_data.date_from, "%Y-%m-%d")
-    end_date = datetime.strptime(input_data.date_to, "%Y-%m-%d")
+    # Parse dates (interpreted as UTC calendar days)
+    try:
+        start_date = datetime.strptime(date_from_str, "%Y-%m-%d").replace(tzinfo=UTC)
+        end_date = datetime.strptime(date_to_str, "%Y-%m-%d").replace(tzinfo=UTC)
+    except ValueError as e:
+        raise ValueError(f"Invalid date format. Use YYYY-MM-DD: {e}") from e
 
-    # Generate morning (10 AM) and afternoon (2 PM) slots for next 7 days
-    while current_date <= end_date and len(slots) < 14:
-        # Skip weekends for this stub
-        if current_date.weekday() < 5:  # Monday = 0, Friday = 4
-            # Morning slot
-            morning = current_date.replace(hour=10, minute=0, second=0)
-            slots.append(TimeSlot(
-                slot_id=f"slot_{input_data.property_id}_{morning.strftime('%Y%m%d_%H%M')}",
-                datetime=morning,
-                available=True,
-            ))
+    # date_to is inclusive, so the generation range ends at the next midnight
+    end_date = end_date + timedelta(days=1)
 
-            # Afternoon slot
-            afternoon = current_date.replace(hour=14, minute=0, second=0)
-            slots.append(TimeSlot(
-                slot_id=f"slot_{input_data.property_id}_{afternoon.strftime('%Y%m%d_%H%M')}",
-                datetime=afternoon,
-                available=True,
-            ))
+    # Recommend only what can actually be booked right now: at least 1 hour
+    # ahead (enforced by the service) and no more than MAX_DAYS_AHEAD out.
+    now = datetime.now(UTC)
+    start_date = max(start_date, now)
+    end_date = min(end_date, now + timedelta(days=MAX_DAYS_AHEAD))
+    if end_date <= start_date:
+        return GetAvailableSlotsOutput(property_id=property_id, slots=[])
 
-        current_date += timedelta(days=1)
+    # Generate real slots. The service raises RuntimeError if the calendar is
+    # configured but unreachable; fail closed by returning no slots so the AI
+    # offers a human consultant instead of guessing.
+    try:
+        slot_dicts = generate_time_slots(
+            db=db,
+            property_id=property_id,
+            start_date=start_date,
+            end_date=end_date
+        )
+    except RuntimeError:
+        return GetAvailableSlotsOutput(property_id=property_id, slots=[])
+
+    # Convert to TimeSlot schema objects (max 10 so the reply stays readable)
+    available_slots: list[TimeSlot] = []
+    for slot in slot_dicts:
+        if not slot["available"]:
+            continue
+
+        slot_dt = datetime.fromisoformat(slot["start"])
+        if slot_dt.tzinfo is None:
+            slot_dt = slot_dt.replace(tzinfo=UTC)
+
+        # Slot IDs are opaque, but encode the instant in UTC so the booking
+        # tool can parse them unambiguously.
+        slot_dt_utc = slot_dt.astimezone(UTC)
+
+        available_slots.append(TimeSlot(
+            slot_id=f"slot_{property_id}_{slot_dt_utc.strftime('%Y%m%d_%H%M')}",
+            datetime=slot_dt,
+            available=True
+        ))
+        if len(available_slots) >= 10:
+            break
 
     return GetAvailableSlotsOutput(
-        property_id=input_data.property_id,
-        slots=slots[:10],  # Return max 10 slots
+        property_id=property_id,
+        slots=available_slots
     )
 
 

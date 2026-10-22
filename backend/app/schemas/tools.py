@@ -183,6 +183,7 @@ class BookViewingOutput(BaseModel):
     confirmed: bool
     slot_datetime: datetime
     confirmation_sent: bool
+    message: str | None = None
 
 
 # ============================================================================

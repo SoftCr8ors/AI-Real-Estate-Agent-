@@ -61,3 +61,5 @@ Thumbs.db
 Self_Readmy.md
 docs
 architecture.html
+secrets/
+*.json

@@ -22,6 +22,13 @@ dependencies = [
     "groq==0.11.0",
     "openai==1.51.2",
     "cryptography==43.0.1",
+    # Phase 5: Google Calendar Integration
+    "google-api-python-client==2.149.0",
+    "google-auth==2.35.0",
+    "google-auth-oauthlib==1.2.1",
+    "google-auth-httplib2==0.2.0",
+    # Timezone database (Windows and slim containers lack system tzdata)
+    "tzdata==2024.2",
 ]
 
 [project.optional-dependencies]

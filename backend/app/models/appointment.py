@@ -1,7 +1,8 @@
 import enum
 
-from sqlalchemy import CheckConstraint, Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy import CheckConstraint, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.core.database import Base
@@ -32,9 +33,33 @@ class Appointment(Base):
         index=True,
     )
     notes = Column(String, nullable=True)
+
+    # Google Calendar sync fields
+    google_event_id = Column(String(255), nullable=True, index=True)
+    google_calendar_id = Column(String(255), nullable=True)
+    sync_status = Column(
+        String(20),
+        default="pending",
+        nullable=False,
+        index=True,
+        comment="pending, synced, failed"
+    )
+    sync_error = Column(Text, nullable=True)
+    last_sync_attempt = Column(DateTime(timezone=True), nullable=True)
+    sync_retry_count = Column(Integer, default=0, nullable=False)
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
+    # Relationships
+    lead = relationship("Lead", back_populates="appointments")
+    property = relationship("Property")
+    agent = relationship("AdminUser")
+
     __table_args__ = (
         CheckConstraint("duration_minutes > 0", name="positive_duration"),
+        CheckConstraint(
+            "sync_status IN ('pending', 'synced', 'failed')",
+            name="valid_sync_status"
+        ),
     )

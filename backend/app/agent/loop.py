@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.agent.lm_client import LLMClient, RateLimitError
 from app.agent.prompts import build_state_summary, get_system_prompt
-from app.agent.registry import execute_tool
+from app.agent.registry import execute_tool, get_all_tools
 from app.agent.state import load_conversation_state
 from app.agent.validator import (
     build_correction_prompt,
@@ -93,8 +93,7 @@ async def run_agent_loop(
         return
 
     # Get tool definitions
-    # tools = get_all_tools()  # TEMPORARILY DISABLED FOR TESTING
-    tools = None  # Test without tools first
+    tools = get_all_tools()
 
     # Agent loop (max 5 iterations to prevent infinite loops)
     max_iterations = 5
